@@ -32,7 +32,7 @@ class Camera():
             modified_frame = cv.cvtColor(self.frame, cv.COLOR_BGR2GRAY)
             modified_frame = cv.adaptiveThreshold(
                 modified_frame, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV, 11, 2)
-            modified_frame = cv.Canny(modified_frame, 90, 210)
+            # modified_frame = cv.Canny(modified_frame, 90, 210)
 
             # Display the resulting frame
             cv.imshow('frame', modified_frame)
