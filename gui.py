@@ -1,7 +1,8 @@
 import sys
+import os
 import cv2
 import numpy as np
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QGridLayout, QPushButton
+from PyQt5.QtWidgets import QApplication, QFileDialog, QWidget, QLabel, QMessageBox, QHBoxLayout, QVBoxLayout, QGridLayout, QPushButton
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import QTimer
 
@@ -44,8 +45,39 @@ class WebcamWidget(QWidget):
         self.init_ui()
         self.analyzed_img = None
 
+    def showAlert(self):
+        # Create a QMessageBox
+        msg_box = QMessageBox()
+        msg_box.setWindowTitle('Alert')
+        msg_box.setText('This is an alert!')
+
+        # Create a QTimer to close the QMessageBox after 3000 milliseconds (3 seconds)
+        timer = QTimer(self)
+        timer.timeout.connect(msg_box.close)
+        timer.start(3000)
+
+        # Show the QMessageBox
+        msg_box.exec_()
+
     def capture_frame(self):
         _, self.analyzed_img = self.video_capture.read()
+
+    def upload_file_dialog(self):
+        try:
+            fname = QFileDialog.getOpenFileName(
+                self, 'Open File', '/')
+            path, extension = os.path.splitext(str(fname[0]))
+            print(f"Extension: .{extension}")
+
+            self.analyzed_img = cv2.imread(fname[0])
+
+        except Exception as e:
+            print('Something went wrong')
+            print(e)
+
+        finally:
+            # fname is a tuple where the first element is the file path
+            print(f'Selected file: {fname[0]}')
 
     def init_ui(self):
         layout = QGridLayout()  # Use QGridLayout to create a 2x2 grid layout
@@ -54,35 +86,37 @@ class WebcamWidget(QWidget):
         self.label_normal = QLabel(self)
         self.label_threshold = QLabel(self)
         self.label_masked = QLabel(self)
+
+        # Add buttons to the second column
+        # BTN1
+        button1 = QPushButton("Capture Frame", self)
+        button1.clicked.connect(self.capture_frame)
+        # BTN2
+        button2 = QPushButton("Upload Image", self)
+        button2.clicked.connect(self.upload_file_dialog)
+        # BTN3
+        button3 = QPushButton("Analyze", self)
+
+        # Create a sub-layout (e.g., QVBoxLayout) for the grid cell
+        btn_layout = QVBoxLayout()
+        sub_layout1 = QHBoxLayout()
+        sub_layout2 = QHBoxLayout()
+
+        sub_layout1.addWidget(button1)
+        sub_layout1.addWidget(button2)
+        sub_layout2.addWidget(button3)
+
         # Add normal feed to the top cell of the first column
         layout.addWidget(self.label_normal, 0, 0)
         # Add thresholded feed to the bottom cell of the first column
         layout.addWidget(self.label_threshold, 1, 0)
         layout.addWidget(self.label_masked, 1, 1)
 
-        # Add buttons to the second column
-        button1 = QPushButton("Capture Frame", self)
-        button1.clicked.connect(self.capture_frame)
+        btn_layout.addLayout(sub_layout1)
+        btn_layout.addLayout(sub_layout2)
 
-        button2 = QPushButton("Analyze", self)
-
-        button3 = QPushButton("Button 3", self)
-
-        button4 = QPushButton("Button 4", self)
-
-        # Create a sub-layout (e.g., QVBoxLayout) for the grid cell
-        sub_layout1 = QVBoxLayout()
-        sub_layout1.addWidget(button1)
-        sub_layout1.addWidget(button2)
-
-        sub_layout2 = QVBoxLayout()
-        sub_layout2.addWidget(button3)
-        sub_layout2.addWidget(button4)
-
-        # Add button3 to the top cell of the third row in the second column
-        layout.addLayout(sub_layout1, 0, 1)
-        # Add button4 to the bottom cell of the fourth row in the second column
-        # layout.addLayout(sub_layout2, 1, 1)
+        # Add buttons to the top-right cell
+        layout.addLayout(btn_layout, 0, 1)
 
         self.setLayout(layout)
         self.setWindowTitle("Webcam Widget")
