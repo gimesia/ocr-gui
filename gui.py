@@ -1,3 +1,4 @@
+import logging
 import sys
 import os
 import cv2
@@ -44,6 +45,7 @@ class WebcamWidget(QWidget):
         self.timer.start(10)  # Update frame every 10 milliseconds
         self.init_ui()
         self.analyzed_img = None
+        self.uploaded_img = False
 
     def showAlert(self):
         # Create a QMessageBox
@@ -60,6 +62,7 @@ class WebcamWidget(QWidget):
         msg_box.exec_()
 
     def capture_frame(self):
+        self.uploaded_img = False
         _, self.analyzed_img = self.video_capture.read()
 
     def upload_file_dialog(self):
@@ -67,8 +70,6 @@ class WebcamWidget(QWidget):
             fname = QFileDialog.getOpenFileName(
                 self, 'Open File', '/')
             path, extension = os.path.splitext(str(fname[0]))
-            print(f"Extension: .{extension}")
-
             self.analyzed_img = cv2.imread(fname[0])
 
         except Exception as e:
@@ -78,9 +79,11 @@ class WebcamWidget(QWidget):
         finally:
             # fname is a tuple where the first element is the file path
             print(f'Selected file: {fname[0]}')
+            self.uploaded_img = True
 
     def init_ui(self):
-        layout = QGridLayout()  # Use QGridLayout to create a 2x2 grid layout
+        # Use QGridLayout to create a 2x2 grid layout
+        layout = QGridLayout()
 
         # Add camera feed labels to the first column
         self.label_normal = QLabel(self)
@@ -126,41 +129,52 @@ class WebcamWidget(QWidget):
     def update_frame(self):
         ret, frame = self.video_capture.read()
         if ret:
-            # Convert frame to grayscale for adaptive thresholding (example processing step)
-            gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-            # Apply adaptive thresholding (example processing step)
-            threshold_frame = cv2.adaptiveThreshold(gray_frame, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
-                                                    cv2.THRESH_BINARY, 11, 2)
-
-            # Convert frames to appropriate format for displaying in QLabel
+            # Topleft
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            threshold_frame = cv2.cvtColor(threshold_frame, cv2.COLOR_GRAY2RGB)
-            mask_frame = cv2.cvtColor(threshold_frame, cv2.COLOR_RGB2BGR)
-            if self.analyzed_img is not None:
-                threshold_frame = cv2.cvtColor(
-                    self.analyzed_img, cv2.COLOR_BGR2RGB)
-                mask_frame = mask_white_objects(self.analyzed_img)
-
-            # Convert frames to QImage
             height, width, channel = frame.shape
             bytes_per_line = 3 * width
             image = QImage(frame.data, width, height,
                            bytes_per_line, QImage.Format_RGB888)
+            pixmap = QPixmap.fromImage(image)
+            self.label_normal.setPixmap(pixmap)
+
+            # Convert frame to grayscale for adaptive thresholding (example processing step)
+            gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            threshold_frame = gray_frame
+
+            # Apply adaptive thresholding (example processing step)
+            # cv2.adaptiveThreshold(gray_frame, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 11, 2)
+
+            # Convert frames to appropriate format for displaying in QLabel
+            threshold_frame = cv2.cvtColor(threshold_frame, cv2.COLOR_GRAY2RGB)
+            mask_frame = cv2.cvtColor(threshold_frame, cv2.COLOR_RGB2BGR)
+
+            if self.analyzed_img is not None:
+                if self.analyzed_img.shape != frame.shape:
+                    self.analyzed_img = cv2.resize(
+                        self.analyzed_img, (frame.shape[1], frame.shape[0]), cv2.INTER_AREA)
+
+                threshold_frame = cv2.cvtColor(
+                    self.analyzed_img, cv2.COLOR_BGR2RGB)
+                # mask_white_objects(self.analyzed_img)
+                mask_frame = self.analyzed_img
+
+            # Convert frames to QImage
             threshold_image = QImage(
                 threshold_frame.data, width, height, bytes_per_line, QImage.Format_RGB888)
             mask_image = QImage(
                 mask_frame.data, width, height, bytes_per_line, QImage.Format_RGB888)
 
             # Convert QImage to QPixmap for displaying in QLabel
-            pixmap = QPixmap.fromImage(image)
             threshold_pixmap = QPixmap.fromImage(threshold_image)
             masked_pixmap = QPixmap.fromImage(mask_image)
 
             # Set the QPixmap to the QLabel widgets
-            self.label_normal.setPixmap(pixmap)
             self.label_threshold.setPixmap(threshold_pixmap)
             self.label_masked.setPixmap(masked_pixmap)
+
+            if self.uploaded_img:
+                pass
 
 
 if __name__ == "__main__":
