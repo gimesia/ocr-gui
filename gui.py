@@ -5,7 +5,21 @@ import cv2
 import numpy as np
 from PyQt5.QtWidgets import QMainWindow, QApplication, QFileDialog, QWidget, QLabel, QMessageBox, QHBoxLayout, QVBoxLayout, QGridLayout, QPushButton
 from PyQt5.QtGui import QImage, QPixmap
-from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import QTimer, Qt
+
+
+def image2pixelmap(img: np.ndarray, shape=None):
+    if shape is None:
+        height, width, channel = img.shape
+    else:
+        height, width = shape
+
+    bytes_per_line = 3 * width
+
+    image = QImage(img, width, height,
+                   bytes_per_line, QImage.Format_RGB888)
+
+    return QPixmap.fromImage(image)
 
 
 class MainWindow(QMainWindow):
@@ -16,18 +30,21 @@ class MainWindow(QMainWindow):
         self.show()
 
     def init_ui(self):
-        self.setGeometry(100, 100, 640, 480)
+        # self.setGeometry(100, 100, 640, 480)
+        self.setGeometry(100, 100, 854, 640)
         self.setWindowTitle('Main Window')
 
         self.setCentralWidget(self.webcam_widget)
 
     def open_new_window(self):
-        self.setEnabled(False)  # Disable main window
-        self.new_window = AnlalyzerWindow(self)
-        self.new_window.show()
-
-        # Re-enable main window when the new window is closed
-        self.new_window.installEventFilter(self)
+        if self.webcam_widget.analyzed_img is not None:
+            self.new_window = AnalyzerWindow(self)
+            self.new_window.show()
+            self.setEnabled(False)  # Disable main window
+            # Re-enable main window when closed
+            self.new_window.installEventFilter(self)
+        else:
+            print("Capture a frame or upload an image first!")
 
     def eventFilter(self, source, event):
         if event.type() == event.Close:
@@ -76,8 +93,13 @@ class WebcamWidget(QWidget):
 
         # Add camera feed labels to the first column
         self.label_normal = QLabel(self)
+        self.label_normal.setAlignment(Qt.AlignCenter)
+
         self.label_threshold = QLabel(self)
+        self.label_threshold.setAlignment(Qt.AlignCenter)
+
         self.label_masked = QLabel(self)
+        self.label_masked.setAlignment(Qt.AlignCenter)
 
         # Add buttons to the second column
         # BTN1
@@ -113,7 +135,7 @@ class WebcamWidget(QWidget):
 
         self.setLayout(layout)
         self.setWindowTitle("Webcam Widget")
-        self.setGeometry(100, 100, 640, 480)
+        # self.setGeometry(100, 100, 640, 480)
         self.show()
 
     def update_frame(self):
@@ -121,19 +143,11 @@ class WebcamWidget(QWidget):
         if ret:
             # Topleft
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            height, width, channel = frame.shape
-            bytes_per_line = 3 * width
-            image = QImage(frame.data, width, height,
-                           bytes_per_line, QImage.Format_RGB888)
-            pixmap = QPixmap.fromImage(image)
-            self.label_normal.setPixmap(pixmap)
+            self.label_normal.setPixmap(image2pixelmap(frame))
 
             # Convert frame to grayscale for adaptive thresholding (example processing step)
             gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             threshold_frame = gray_frame
-
-            # Apply adaptive thresholding (example processing step)
-            # cv2.adaptiveThreshold(gray_frame, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 11, 2)
 
             # Convert frames to appropriate format for displaying in QLabel
             threshold_frame = cv2.cvtColor(threshold_frame, cv2.COLOR_GRAY2RGB)
@@ -146,36 +160,26 @@ class WebcamWidget(QWidget):
 
                 threshold_frame = cv2.cvtColor(
                     self.analyzed_img, cv2.COLOR_BGR2RGB)
-                # mask_white_objects(self.analyzed_img)
                 mask_frame = self.analyzed_img
 
-            # Convert frames to QImage
-            threshold_image = QImage(
-                threshold_frame.data, width, height, bytes_per_line, QImage.Format_RGB888)
-            mask_image = QImage(
-                mask_frame.data, width, height, bytes_per_line, QImage.Format_RGB888)
-
-            # Convert QImage to QPixmap for displaying in QLabel
-            threshold_pixmap = QPixmap.fromImage(threshold_image)
-            masked_pixmap = QPixmap.fromImage(mask_image)
-
             # Set the QPixmap to the QLabel widgets
-            self.label_threshold.setPixmap(threshold_pixmap)
-            self.label_masked.setPixmap(masked_pixmap)
+            self.label_threshold.setPixmap(image2pixelmap(threshold_frame))
+            self.label_masked.setPixmap(image2pixelmap(mask_frame))
 
             if self.uploaded_img:
                 pass
 
 
-class AnlalyzerWindow(QMainWindow):
+class AnalyzerWindow(QMainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.img = None
 
         self.setGeometry(200, 200, 400, 300)
         self.setWindowTitle('New Window')
 
     def set_image(self, img: np.ndarray):
-        self.__img = img
+        self.img = img
 
 
 if __name__ == "__main__":
