@@ -3,42 +3,45 @@ import sys
 import os
 import cv2
 import numpy as np
-from PyQt5.QtWidgets import QApplication, QFileDialog, QWidget, QLabel, QMessageBox, QHBoxLayout, QVBoxLayout, QGridLayout, QPushButton
+from PyQt5.QtWidgets import QMainWindow, QApplication, QFileDialog, QWidget, QLabel, QMessageBox, QHBoxLayout, QVBoxLayout, QGridLayout, QPushButton
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import QTimer
 
 
-def mask_white_objects(image):
-    # Convert the image to grayscale
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.webcam_widget = WebcamWidget(self.open_new_window)
+        self.init_ui()
+        self.show()
 
-    # Threshold the grayscale image to create a binary mask for white objects
-    _, thresholded = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY)
+    def init_ui(self):
+        self.setGeometry(100, 100, 640, 480)
+        self.setWindowTitle('Main Window')
 
-    # Find contours in the binary mask
-    contours, _ = cv2.findContours(
-        thresholded, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        self.setCentralWidget(self.webcam_widget)
 
-    # Create an empty mask
-    mask = np.zeros_like(image)
+    def open_new_window(self):
+        self.setEnabled(False)  # Disable main window
+        self.new_window = AnlalyzerWindow(self)
+        self.new_window.show()
 
-    # Draw white contours on the mask
-    # cv2.drawContours(mask, contours, -1, (255, 255, 255), thickness=cv2.FILLED)
+        # Re-enable main window when the new window is closed
+        self.new_window.installEventFilter(self)
 
-    for contour in contours:
-        x, y, w, h = cv2.boundingRect(contour)
-        cv2.rectangle(mask, (x, y), (x+w, y+h),
-                      (255, 255, 255), thickness=cv2.FILLED)
-
-    # Bitwise AND the original image with the mask to mask out white objects
-    masked_image = cv2.bitwise_and(image, mask)
-
-    return masked_image
+    def eventFilter(self, source, event):
+        if event.type() == event.Close:
+            # Enable main window when the new window is closed
+            self.setEnabled(True)
+            return False
+        return super().eventFilter(source, event)
 
 
 class WebcamWidget(QWidget):
-    def __init__(self):
+    def __init__(self, open_analyzer):
         super().__init__()
+        self.open_analyzer = open_analyzer
+
         self.video_capture = cv2.VideoCapture(0)
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_frame)
@@ -46,20 +49,6 @@ class WebcamWidget(QWidget):
         self.init_ui()
         self.analyzed_img = None
         self.uploaded_img = False
-
-    def showAlert(self):
-        # Create a QMessageBox
-        msg_box = QMessageBox()
-        msg_box.setWindowTitle('Alert')
-        msg_box.setText('This is an alert!')
-
-        # Create a QTimer to close the QMessageBox after 3000 milliseconds (3 seconds)
-        timer = QTimer(self)
-        timer.timeout.connect(msg_box.close)
-        timer.start(3000)
-
-        # Show the QMessageBox
-        msg_box.exec_()
 
     def capture_frame(self):
         self.uploaded_img = False
@@ -99,6 +88,7 @@ class WebcamWidget(QWidget):
         button2.clicked.connect(self.upload_file_dialog)
         # BTN3
         button3 = QPushButton("Analyze", self)
+        button3.clicked.connect(self.open_analyzer)
 
         # Create a sub-layout (e.g., QVBoxLayout) for the grid cell
         btn_layout = QVBoxLayout()
@@ -177,7 +167,18 @@ class WebcamWidget(QWidget):
                 pass
 
 
+class AnlalyzerWindow(QMainWindow):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.setGeometry(200, 200, 400, 300)
+        self.setWindowTitle('New Window')
+
+    def set_image(self, img: np.ndarray):
+        self.__img = img
+
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = WebcamWidget()
+    window = MainWindow()
     sys.exit(app.exec_())
