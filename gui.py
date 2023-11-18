@@ -35,6 +35,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle('Main Window')
 
         self.setCentralWidget(self.webcam_widget)
+        self.showMaximized()
 
     def open_new_window(self):
         if self.webcam_widget.analyzed_img is not None:
@@ -132,11 +133,7 @@ class WebcamWidget(QWidget):
 
         # Add buttons to the top-right cell
         layout.addLayout(btn_layout, 0, 1)
-
         self.setLayout(layout)
-        self.setWindowTitle("Webcam Widget")
-        # self.setGeometry(100, 100, 640, 480)
-        self.show()
 
     def update_frame(self):
         ret, frame = self.video_capture.read()
@@ -176,7 +173,7 @@ class AnalyzerWindow(QMainWindow):
         self.img = None
 
         self.setGeometry(200, 200, 400, 300)
-        self.setWindowTitle('New Window')
+        self.setWindowTitle('Extract text')
 
     def set_image(self, img: np.ndarray):
         self.img = img
