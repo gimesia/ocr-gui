@@ -1,49 +1,55 @@
 import numpy as np
 import cv2 as cv
+from PyQt5.QtWidgets import QMainWindow
 
-import logging as log
+
+class AnalyzerWindow(QMainWindow):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.img = None
+        bbox = None
+
+        self.setGeometry(200, 200, 400, 300)
+        self.setWindowTitle('Extract text')
+
+    def set_image(self, img: np.ndarray):
+        self.img = img
 
 
 class BBox():
-    def __init__(self, tl: tuple[int, int], br: tuple[int, int]):
-        self._tl = tl
-        self._br = br
+    def __init__(self, tl, tr, bl, br):
+        self.topleft = tl
+        self.topright = tr
+        self.bottomleft = bl
+        self.bottomright = br
 
-    def tl(self):
-        return self._tl
-
-    def br(self):
-        return self._br
-
-    def tr(self):
-        return (self.br[0], self._tl[1])
-
-    def bl(self):
-        return (self._tl[0], self.br[1])
+    def points(self):
+        return [self.topleft, self.topright, self.bottomleft, self.bottomright]
 
 
-class Analyzer():
-    def __init__(self, img: np.ndarray = None):
-        self.img = img
-        self.bbox: BBox = None
+def mask_white_objects(image):
+    # Convert the image to grayscale
+    gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
 
-    def analyze_img(self, img: np.ndarray):
-        self.img = img
+    # Threshold the grayscale image to create a binary mask for white objects
+    _, thresholded = cv.threshold(gray, 200, 255, cv.THRESH_BINARY)
 
-        if self.img is not None:
-            print("Image can be analyzed")
-            gray = cv.cvtColor(self.img, cv.COLOR_BGR2GRAY)
-            blur = cv.GaussianBlur(gray, (3, 3), 0)
+    # Find contours in the binary mask
+    contours, _ = cv.findContours(
+        thresholded, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
 
-            th = cv.threshold(gray, 0, 255, cv.THRESH_BINARY+cv.THRESH_OTSU)[1]
-            img_dilation = cv.dilate(th, np.ones((3, 3)), iterations=2)
+    # Create an empty mask
+    mask = np.zeros_like(image)
 
-            masked = gray * img_dilation
+    # Draw white contours on the mask
+    # cv.drawContours(mask, contours, -1, (255, 255, 255), thickness=cv.FILLED)
 
-            # Make the masked area *pop*
-            dst = cv.addWeighted(masked, 0.65, gray, 0.35, 0)
+    for contour in contours:
+        x, y, w, h = cv.boundingRect(contour)
+        cv.rectangle(mask, (x, y), (x+w, y+h),
+                     (255, 255, 255), thickness=cv.FILLED)
 
-            cv.imshow("Analyzed", dst)
-            cv.imwrite("im.jpg", img)
-        else:
-            log.error("Image is not set")
+    # Bitwise AND the original image with the mask to mask out white objects
+    masked_image = cv.bitwise_and(image, mask)
+
+    return masked_image

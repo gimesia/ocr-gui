@@ -1,11 +1,13 @@
 import logging
 import sys
 import os
-import cv2
+import cv2 as cv
 import numpy as np
 from PyQt5.QtWidgets import QMainWindow, QApplication, QFileDialog, QWidget, QLabel, QMessageBox, QHBoxLayout, QVBoxLayout, QGridLayout, QPushButton
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import QTimer, Qt
+
+from Analyzer import AnalyzerWindow
 
 
 def image2pixelmap(img: np.ndarray, shape=None):
@@ -41,6 +43,8 @@ class MainWindow(QMainWindow):
         if self.webcam_widget.analyzed_img is not None:
             self.new_window = AnalyzerWindow(self)
             self.new_window.show()
+            self.new_window.set_image(self.webcam_widget.analyzed_img)
+
             self.setEnabled(False)  # Disable main window
             # Re-enable main window when closed
             self.new_window.installEventFilter(self)
@@ -60,7 +64,7 @@ class WebcamWidget(QWidget):
         super().__init__()
         self.open_analyzer = open_analyzer
 
-        self.video_capture = cv2.VideoCapture(0)
+        self.video_capture = cv.VideoCapture(0)
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_frame)
         self.timer.start(10)  # Update frame every 10 milliseconds
@@ -77,7 +81,7 @@ class WebcamWidget(QWidget):
             fname = QFileDialog.getOpenFileName(
                 self, 'Open File', '/')
             path, extension = os.path.splitext(str(fname[0]))
-            self.analyzed_img = cv2.imread(fname[0])
+            self.analyzed_img = cv.imread(fname[0])
 
         except Exception as e:
             print('Something went wrong')
@@ -139,24 +143,24 @@ class WebcamWidget(QWidget):
         ret, frame = self.video_capture.read()
         if ret:
             # Topleft
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
             self.label_normal.setPixmap(image2pixelmap(frame))
 
             # Convert frame to grayscale for adaptive thresholding (example processing step)
-            gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            gray_frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
             threshold_frame = gray_frame
 
             # Convert frames to appropriate format for displaying in QLabel
-            threshold_frame = cv2.cvtColor(threshold_frame, cv2.COLOR_GRAY2RGB)
-            mask_frame = cv2.cvtColor(threshold_frame, cv2.COLOR_RGB2BGR)
+            threshold_frame = cv.cvtColor(threshold_frame, cv.COLOR_GRAY2RGB)
+            mask_frame = cv.cvtColor(threshold_frame, cv.COLOR_RGB2BGR)
 
             if self.analyzed_img is not None:
                 if self.analyzed_img.shape != frame.shape:
-                    self.analyzed_img = cv2.resize(
-                        self.analyzed_img, (frame.shape[1], frame.shape[0]), cv2.INTER_AREA)
+                    self.analyzed_img = cv.resize(
+                        self.analyzed_img, (frame.shape[1], frame.shape[0]), cv.INTER_AREA)
 
-                threshold_frame = cv2.cvtColor(
-                    self.analyzed_img, cv2.COLOR_BGR2RGB)
+                threshold_frame = cv.cvtColor(
+                    self.analyzed_img, cv.COLOR_BGR2RGB)
                 mask_frame = self.analyzed_img
 
             # Set the QPixmap to the QLabel widgets
@@ -165,18 +169,6 @@ class WebcamWidget(QWidget):
 
             if self.uploaded_img:
                 pass
-
-
-class AnalyzerWindow(QMainWindow):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.img = None
-
-        self.setGeometry(200, 200, 400, 300)
-        self.setWindowTitle('Extract text')
-
-    def set_image(self, img: np.ndarray):
-        self.img = img
 
 
 if __name__ == "__main__":
