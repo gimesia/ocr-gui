@@ -11,6 +11,7 @@ class AnalyzerWindow(QMainWindow):
 
         self.setGeometry(200, 200, 400, 300)
         self.setWindowTitle('Extract text')
+        self.showMaximized()
 
     def set_image(self, img: np.ndarray):
         self.img = img
