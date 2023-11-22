@@ -8,20 +8,7 @@ from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import QTimer, Qt
 
 from Analyzer import AnalyzerWindow
-
-
-def image2pixelmap(img: np.ndarray, shape=None):
-    if shape is None:
-        height, width, channel = img.shape
-    else:
-        height, width = shape
-
-    bytes_per_line = 3 * width
-
-    image = QImage(img, width, height,
-                   bytes_per_line, QImage.Format_RGB888)
-
-    return QPixmap.fromImage(image)
+from utils import image2pixelmap
 
 
 class MainWindow(QMainWindow):
@@ -30,14 +17,13 @@ class MainWindow(QMainWindow):
         self.webcam_widget = WebcamWidget(self.open_new_window)
         self.init_ui()
         self.show()
+        self.showMaximized()
 
     def init_ui(self):
         # self.setGeometry(100, 100, 640, 480)
         self.setGeometry(100, 100, 854, 640)
         self.setWindowTitle('Main Window')
-
         self.setCentralWidget(self.webcam_widget)
-        self.showMaximized()
 
     def open_new_window(self):
         if self.webcam_widget.analyzed_img is not None:
