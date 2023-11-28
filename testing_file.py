@@ -12,6 +12,9 @@ class ImageDrawer(QMainWindow):
         self.setWindowTitle("Image Clicker")
         self.setGeometry(100, 100, 800, 600)
 
+        self.points = [(0, 0), (0, 0), (0, 0), (0, 0),]
+        self.edited_point_index = None
+
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
         self.layout = QVBoxLayout()
@@ -56,13 +59,43 @@ class ImageDrawer(QMainWindow):
         x = int(mapped_pos.x())
         y = int(mapped_pos.y())
 
-        # Draw a circle on the OpenCV image
-        cv2.circle(self.cv_image, (x, y), 5, (0, 0, 255), -1)
+        img = self.cv_image.copy()
 
-        # Convert the OpenCV image to QPixmap and update the scene
-        qt_image = self.convert_cv_to_qt(self.cv_image)
-        self.scene.clear()
-        self.scene.addPixmap(qt_image)
+        if self.edited_point_index is not None:
+            self.change_point((x, y))
+            # Convert the OpenCV image to QPixmap and update the scene
+            qt_image = self.convert_cv_to_qt(img)
+            self.scene.clear()
+            self.scene.addPixmap(qt_image)
+            self.edited_point_index = None
+
+        if self.edited_point_index is None:
+            self.edited_point_index = self.find_point_to_edit((x, y))
+
+        for i, point in enumerate(self.points):
+            rad = 8
+            if i == self.edited_point_index:
+                rad = 4
+            cv2.circle(img, point, rad, (0, 0, 255), -1)
+            print(point)
+
+        # Draw a circle on the OpenCV image
+        # cv2.circle(img, self.points[0], 5, (0, 0, 255), -1)
+        # cv2.circle(img, self.points[1], 5, (0, 255, 0), -1)
+        # cv2.circle(img, self.points[2], 5, (255, 0, 0), -1)
+        # cv2.circle(img, self.points[3], 5, (0, 255, 255), -1)
+
+    def find_point_to_edit(self, point):
+        dists = [dist(point, p) for p in self.points]
+        min_dist = dists.index(np.array(dists).min())
+        self.edited_point_index = min_dist
+        print(min_dist)
+
+    def change_point(self, point):
+        self.points[self.edited_point_index] = point
+
+
+def dist(x, y): return np.linalg.norm(np.array(x)-np.array(y))
 
 
 if __name__ == "__main__":
