@@ -27,10 +27,10 @@ class ImageDrawer(QMainWindow):
 
         # Load an image (replace 'your_image.jpg' with the path to your image)
         self.cv_image = cv2.imread("im/bill0.jpg")
-        self.image = self.convert_cv_to_qt(self.cv_image)
-
-        # Add the image to the scene
-        self.scene.addPixmap(self.image)
+        # self.image = self.convert_cv_to_qt(self.cv_image)
+        self.refresh_img()
+        # # Add the image to the scene
+        # self.scene.addPixmap(self.image)
 
         # Connect mouse click event
         self.view.mousePressEvent = self.mouse_click_event
@@ -59,40 +59,42 @@ class ImageDrawer(QMainWindow):
         x = int(mapped_pos.x())
         y = int(mapped_pos.y())
 
-        img = self.cv_image.copy()
-
-        if self.edited_point_index is not None:
-            self.change_point((x, y))
-            # Convert the OpenCV image to QPixmap and update the scene
-            qt_image = self.convert_cv_to_qt(img)
-            self.scene.clear()
-            self.scene.addPixmap(qt_image)
-            self.edited_point_index = None
-
         if self.edited_point_index is None:
-            self.edited_point_index = self.find_point_to_edit((x, y))
+            self.find_point_to_edit((x, y))
+        else:
+            self.change_point((x, y))
 
-        for i, point in enumerate(self.points):
-            rad = 8
-            if i == self.edited_point_index:
-                rad = 4
-            cv2.circle(img, point, rad, (0, 0, 255), -1)
-            print(point)
-
+        self.refresh_img()
         # Draw a circle on the OpenCV image
         # cv2.circle(img, self.points[0], 5, (0, 0, 255), -1)
         # cv2.circle(img, self.points[1], 5, (0, 255, 0), -1)
         # cv2.circle(img, self.points[2], 5, (255, 0, 0), -1)
         # cv2.circle(img, self.points[3], 5, (0, 255, 255), -1)
 
+    def refresh_img(self):
+        img = self.cv_image.copy()
+        for i, point in enumerate(self.points):
+            rad = 4
+            thickness = -1
+            if i == self.edited_point_index:
+                rad = 8
+                thickness = 2
+            cv2.circle(img, point, rad, (0, 0, 255), thickness)
+
+        # Convert the OpenCV image to QPixmap and update the scene
+        qt_image = self.convert_cv_to_qt(img)
+        self.scene.clear()
+        self.scene.addPixmap(qt_image)
+
     def find_point_to_edit(self, point):
         dists = [dist(point, p) for p in self.points]
-        min_dist = dists.index(np.array(dists).min())
-        self.edited_point_index = min_dist
-        print(min_dist)
+        min_dist = np.array(dists).min()
+        min_dist_index = dists.index(min_dist)
+        self.edited_point_index = min_dist_index
 
     def change_point(self, point):
         self.points[self.edited_point_index] = point
+        self.edited_point_index = None
 
 
 def dist(x, y): return np.linalg.norm(np.array(x)-np.array(y))
