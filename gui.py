@@ -8,7 +8,7 @@ from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import QTimer, Qt
 
 from Analyzer import AnalyzerWindow
-from utils import image2pixelmap
+from utils import image2pixelmap, mask_white_objects
 
 
 class MainWindow(QMainWindow):
@@ -27,9 +27,8 @@ class MainWindow(QMainWindow):
 
     def open_new_window(self):
         if self.webcam_widget.analyzed_img is not None:
-            self.new_window = AnalyzerWindow(self)
+            self.new_window = AnalyzerWindow(self.webcam_widget.analyzed_img)
             self.new_window.show()
-            self.new_window.set_image(self.webcam_widget.analyzed_img)
 
             self.setEnabled(False)  # Disable main window
             # Re-enable main window when closed
@@ -151,7 +150,8 @@ class WebcamWidget(QWidget):
 
             # Set the QPixmap to the QLabel widgets
             self.label_threshold.setPixmap(image2pixelmap(threshold_frame))
-            self.label_masked.setPixmap(image2pixelmap(mask_frame))
+            self.label_masked.setPixmap(
+                image2pixelmap(mask_white_objects(mask_frame)))
 
             if self.uploaded_img:
                 pass
