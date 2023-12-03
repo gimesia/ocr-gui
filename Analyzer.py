@@ -15,16 +15,34 @@ class AnalyzerWindow(QMainWindow):
         super().__init__()
         self.img = img
         self.cut_img = None
+        self.bbox_editor = BBoxEditorWidget(self.img)
 
         self.setWindowTitle('Extract text')
 
         self.central_widget = QWidget()
 
-        self.setCentralWidget(BBoxEditorWidget(self.img))
+        self.layout = QHBoxLayout()
+        self.layout.addWidget(self.bbox_editor)
+
+        self.central_widget.setLayout(self.layout)
+        self.setCentralWidget(self.central_widget)
+
+        button1 = QPushButton("Cut", self)
+        self.layout.addWidget(button1)
+        button1.clicked.connect(self.cut_image)
+
         self.show()
 
     def set_image(self, img: np.ndarray):
         self.img = img
+
+    def cut_image(self):
+        mask = self.bbox_editor.bbox.create_mask(self.img.shape).astype(bool)
+        self.cut_img = self.img * mask
+
+        cv.imshow("N", self.cut_img)
+        cv.waitKey(0)
+        cv.destroyAllWindows()
 
 
 class BBoxEditorWidget(QWidget):
@@ -42,16 +60,12 @@ class BBoxEditorWidget(QWidget):
         self.scene.setSceneRect(0, 0, w, h)
 
         self.view = QGraphicsView(self.scene)
+        self.layout.addWidget(self.view)
 
         self.view.mousePressEvent = self.mouse_click_event
 
         self.bbox = BBox(
             (0, 0), (0, h), (w, 0), (w, h))
-
-        self.layout.addWidget(self.view)
-        button1 = QPushButton("Cut", self)
-
-        self.layout.addWidget(button1)
 
         self.refresh_img()
 
@@ -62,7 +76,6 @@ class BBoxEditorWidget(QWidget):
         x = int(mapped_pos.x())
         y = int(mapped_pos.y())
 
-        print((x, y))
         if self.bbox.edited_point_index is None:
             self.bbox.find_point_to_edit((x, y))
             self.refresh_img()
@@ -73,15 +86,11 @@ class BBoxEditorWidget(QWidget):
             self.refresh_img(mask)
 
     def refresh_img(self, mask=None):
-        print("refresh img")
         img = self.img.copy()
 
         if mask is not None:
             alpha = 0.5
             beta = (1.0 - alpha)
-
-            print(img.dtype)
-            print(mask.dtype)
 
             img = cv.addWeighted(
                 img, alpha, mask.astype(np.uint8)*255, beta, 0.0)
@@ -111,34 +120,25 @@ class BBox():
 
     def __str__(self) -> str:
         p = self.points()
-        print(f"tl: {p[0]}\ntr{p[1]}\nbl{p[2]}\nbr{p[3]}")
 
     def points(self):
         return [self.tl, self.tr, self.bl, self.br]
 
     def find_point_to_edit(self, point):
-        print("find point to edit")
         dists = [dist(point, p) for p in self.points()]
         min_dist = np.array(dists).min()
         min_dist_index = dists.index(min_dist)
-        print(f"index to edit {min_dist_index}")
         self.edited_point_index = min_dist_index
 
     def change_point(self, point):
-        print("Changing point")
         print(point)
-        print(f"self.edited_point_index: {self.edited_point_index}")
         if self.edited_point_index == 0:
-            print("Changing point tl")
             self.tl = point
         elif self.edited_point_index == 1:
-            print("Changing point tr")
             self.tr = point
         elif self.edited_point_index == 2:
-            print("Changing point bl")
             self.bl = point
         elif self.edited_point_index == 3:
-            print("Changing point br")
             self.br = point
 
         self.edited_point_index = None
