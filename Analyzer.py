@@ -46,15 +46,33 @@ class AnalyzerWindow(QMainWindow):
         self.cut_img = cut_straight_bbox_img(
             self.cut_img, self.bbox_editor.bbox)
 
-        cv.imshow("N", self.cut_img)
-        cv.waitKey(0)
-        cv.destroyAllWindows()
+        widget = CutImagePreviewWidget(self.cut_img)
+        self.central_widget(widget)
+
+        # cv.imshow("N", self.cut_img)
+        # cv.waitKey(0)
+        # cv.destroyAllWindows()
 
 
 class CutImagePreviewWidget(QWidget):
     def __init__(self, img):
         super().__init__()
         self.img = img
+        h, w, ch = self.img.shape
+        self.resize(w, h)
+
+        self.layout = QHBoxLayout()
+        self.setLayout(self.layout)
+
+        self.scene = QGraphicsScene()
+        self.scene.setSceneRect(0, 0, w, h)
+
+        self.view = QGraphicsView(self.scene)
+        self.layout.addWidget(self.view)
+
+        qt_image = convert_cv_to_qt(self.img)
+        self.scene.clear()
+        self.scene.addPixmap(qt_image)
 
 
 class BBoxEditorWidget(QWidget):
