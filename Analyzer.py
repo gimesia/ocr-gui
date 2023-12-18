@@ -11,25 +11,26 @@ from utils import BBox, convert_cv_to_qt, cut_straight_bbox_img, rotate_img
 
 
 class AnalyzerWindow(QMainWindow):
-    def __init__(self, img):
+    def __init__(self, img):# Wlcome back
         super().__init__()
-        self.img = img
-        self.cut_img = None
-        self.bbox_editor = BBoxEditorWidget(self.img)
-
         self.setWindowTitle('Extract text')
 
-        self.central_widget = QWidget()
+        self.img = img
+        self.cut_img = None
+
+        self.bbox_editor = BBoxEditorWidget(self.img)
+
+        self.control_button = QPushButton("Cut", self)
+        self.control_button.clicked.connect(self.cut_image)
+
+        widget = QWidget()
 
         self.layout = QHBoxLayout()
         self.layout.addWidget(self.bbox_editor)
+        self.layout.addWidget(self.control_button)
 
-        self.central_widget.setLayout(self.layout)
-        self.setCentralWidget(self.central_widget)
-
-        button1 = QPushButton("Cut", self)
-        self.layout.addWidget(button1)
-        button1.clicked.connect(self.cut_image)
+        widget.setLayout(self.layout)
+        self.setCentralWidget(widget)
 
         self.show()
 
@@ -46,8 +47,17 @@ class AnalyzerWindow(QMainWindow):
         self.cut_img = cut_straight_bbox_img(
             self.cut_img, self.bbox_editor.bbox)
 
+
+
+
         widget = CutImagePreviewWidget(self.cut_img)
-        self.central_widget(widget)
+
+        self.layout = QHBoxLayout()
+        self.layout.addWidget(widget)
+        self.layout.addWidget(self.control_button)
+
+        self.central_widget.setLayout(self.layout)
+        self.setCentralWidget(self.central_widget)
 
         # cv.imshow("N", self.cut_img)
         # cv.waitKey(0)
@@ -70,7 +80,7 @@ class CutImagePreviewWidget(QWidget):
         self.view = QGraphicsView(self.scene)
         self.layout.addWidget(self.view)
 
-        qt_image = convert_cv_to_qt(self.img)
+        qt_image = convert_cv_to_qt(self.img.copy())
         self.scene.clear()
         self.scene.addPixmap(qt_image)
 
