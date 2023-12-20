@@ -1,17 +1,19 @@
-
 import sys
 
 import numpy as np
 import cv2 as cv
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QGraphicsView, QGraphicsScene, QPushButton, QMainWindow
-from PyQt5.QtGui import QWindow, QPixmap, QImage
+import pytesseract
+from pytesseract import Output
+
 from PyQt5.QtCore import Qt, QPoint, QRectF
+from PyQt5.QtGui import QWindow, QPixmap, QImage
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QGraphicsView, QGraphicsScene, QPushButton, QMainWindow
 
 from utils import BBox, convert_cv_to_qt, cut_straight_bbox_img, rotate_img
 
 
 class AnalyzerWindow(QMainWindow):
-    def __init__(self, img):# Wlcome back
+    def __init__(self, img):  # Wlcome back
         super().__init__()
         self.setWindowTitle('Extract text')
 
@@ -46,9 +48,6 @@ class AnalyzerWindow(QMainWindow):
 
         self.cut_img = cut_straight_bbox_img(
             self.cut_img, self.bbox_editor.bbox)
-
-
-
 
         widget = CutImagePreviewWidget(self.cut_img)
 
@@ -147,6 +146,24 @@ class BBoxEditorWidget(QWidget):
         qt_image = convert_cv_to_qt(img)
         self.scene.clear()
         self.scene.addPixmap(qt_image)
+
+
+class OCR():
+    def __init__(self):
+        pass
+
+    def analyze_img(img: np.ndarray):
+        """WIP!
+        """
+        d = pytesseract.image_to_data(img, output_type=Output.DICT)
+        print(d.keys())
+        n_boxes = len(d['text'])
+
+        for i in range(n_boxes):
+            if int(d['conf'][i]) > 60:
+                (x, y, w, h) = (d['left'][i], d['top']
+                                [i], d['width'][i], d['height'][i])
+                img = cv.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
 
 if __name__ == "__main__":
