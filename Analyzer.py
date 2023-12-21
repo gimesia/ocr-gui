@@ -13,7 +13,7 @@ from utils import BBox, convert_cv_to_qt, cut_straight_bbox_img, rotate_img
 
 
 class AnalyzerWindow(QMainWindow):
-    def __init__(self, img):  # Wlcome back
+    def __init__(self, img):  # Welcome back
         super().__init__()
         self.setWindowTitle('Extract text')
 
