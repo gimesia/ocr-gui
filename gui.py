@@ -27,6 +27,7 @@ class MainWindow(QMainWindow):
 
     def open_new_window(self):
         if self.webcam_widget.analyzed_img is not None:
+            print(self.webcam_widget.analyzed_img.shape)
             self.new_window = AnalyzerWindow(self.webcam_widget.analyzed_img)
             self.new_window.show()
 
@@ -66,7 +67,10 @@ class WebcamWidget(QWidget):
             fname = QFileDialog.getOpenFileName(
                 self, 'Open File', '/')
             path, extension = os.path.splitext(str(fname[0]))
-            self.analyzed_img = cv.imread(fname[0])
+            im = cv.imread(fname[0])
+            print(im.shape)
+            self.analyzed_img = im
+            print(im.shape)
 
         except Exception as e:
             print('Something went wrong')
@@ -141,12 +145,16 @@ class WebcamWidget(QWidget):
 
             if self.analyzed_img is not None:
                 if self.analyzed_img.shape != frame.shape:
-                    self.analyzed_img = cv.resize(
+                    resized_analyzed_img = cv.resize(
                         self.analyzed_img, (frame.shape[1], frame.shape[0]), cv.INTER_AREA)
 
-                threshold_frame = cv.cvtColor(
-                    self.analyzed_img, cv.COLOR_BGR2RGB)
-                mask_frame = self.analyzed_img
+                    threshold_frame = cv.cvtColor(
+                        resized_analyzed_img, cv.COLOR_BGR2RGB)
+                    mask_frame = resized_analyzed_img
+                else:
+                    threshold_frame = cv.cvtColor(
+                        self.analyzed_img, cv.COLOR_BGR2RGB)
+                    mask_frame = self.analyzed_img
 
             # Set the QPixmap to the QLabel widgets
             self.label_threshold.setPixmap(image2pixelmap(threshold_frame))

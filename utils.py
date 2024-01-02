@@ -21,6 +21,7 @@ class BBox():
 
     def __str__(self) -> str:
         p = self.points()
+        print(p, sep="\n")
 
     def points(self):
         return [self.tl, self.tr, self.bl, self.br]
@@ -44,6 +45,12 @@ class BBox():
 
         self.edited_point_index = None
         self.__str__()
+
+    def shrink(self, shrink_pix=10):
+        self.tl = (self.tl[0]+shrink_pix, self.tl[1]+shrink_pix)
+        self.tr = (self.tr[0]+shrink_pix, self.tr[1]-shrink_pix)
+        self.bl = (self.bl[0]-shrink_pix, self.bl[1]+shrink_pix)
+        self.br = (self.br[0]-shrink_pix, self.br[1]-shrink_pix)
 
     def create_mask(self, shape):
         mask = np.zeros(shape, float)
@@ -177,6 +184,17 @@ def convert_cv_to_qt(cv_image):
 def rotate_img(img, angle):
     height, width = img.shape[:2]
     rotation_matrix = cv.getRotationMatrix2D((width / 2, height / 2), angle, 1)
-    rotated_image = cv.warpAffine(
-        img, rotation_matrix, (width, height))
-    return rotated_image
+
+    new_width = int(
+        (np.abs(rotation_matrix[0, 0]) * width) + (np.abs(rotation_matrix[0, 1]) * height))
+    new_height = int(
+        (np.abs(rotation_matrix[1, 0]) * width) + (np.abs(rotation_matrix[1, 1]) * height))
+
+    # Adjust the rotation matrix to prevent cropping
+    rotation_matrix[0, 2] += (new_width / 2) - (width / 2)
+    rotation_matrix[1, 2] += (new_height / 2) - (height / 2)
+
+    rotated_img = cv.warpAffine(
+        img, rotation_matrix, (new_width, new_height), borderMode=cv.BORDER_CONSTANT)
+
+    return rotated_img

@@ -5,8 +5,6 @@ import cv2 as cv
 import pytesseract
 from pytesseract import Output
 
-from PyQt5.QtCore import Qt, QPoint, QRectF
-from PyQt5.QtGui import QWindow, QPixmap, QImage
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QGraphicsView, QGraphicsScene, QPushButton, QMainWindow
 
 from utils import BBox, convert_cv_to_qt, cut_straight_bbox_img, rotate_img
@@ -19,22 +17,23 @@ class AnalyzerWindow(QMainWindow):
 
         self.img = img
         self.cut_img = None
+        self.cip_widget = None
 
         self.bbox_editor = BBoxEditorWidget(self.img)
 
         self.control_button = QPushButton("Cut", self)
         self.control_button.clicked.connect(self.cut_image)
 
-        widget = QWidget()
+        self.central_widget = QWidget()
 
         self.layout = QHBoxLayout()
         self.layout.addWidget(self.bbox_editor)
         self.layout.addWidget(self.control_button)
 
-        widget.setLayout(self.layout)
-        self.setCentralWidget(widget)
+        self.central_widget.setLayout(self.layout)
+        self.setCentralWidget(self.central_widget)
 
-        self.show()
+        self.showMaximized()
 
     def set_image(self, img: np.ndarray):
         self.img = img
@@ -49,18 +48,24 @@ class AnalyzerWindow(QMainWindow):
         self.cut_img = cut_straight_bbox_img(
             self.cut_img, self.bbox_editor.bbox)
 
-        widget = CutImagePreviewWidget(self.cut_img)
+        widget = QWidget()
+        cip_widget = CutImagePreviewWidget(self.cut_img)
+        self.cip_widget = cip_widget
+        btn = QPushButton("OCR!", self)
+        btn.clicked.connect(self.cut_image)
 
-        self.layout = QHBoxLayout()
-        self.layout.addWidget(widget)
-        self.layout.addWidget(self.control_button)
+        layout = QHBoxLayout()
+        layout.addWidget(cip_widget)
+        layout.addWidget(btn)
 
-        self.central_widget.setLayout(self.layout)
+        widget.setLayout(layout)
+
+        self.central_widget = widget
         self.setCentralWidget(self.central_widget)
 
-        # cv.imshow("N", self.cut_img)
-        # cv.waitKey(0)
-        # cv.destroyAllWindows()
+    def rotate_cut_img(self, clockwise=True):
+        if self.cut_img is None:
+            return
 
 
 class CutImagePreviewWidget(QWidget):
@@ -71,17 +76,44 @@ class CutImagePreviewWidget(QWidget):
         self.resize(w, h)
 
         self.layout = QHBoxLayout()
+        btn_layout = QVBoxLayout()
         self.setLayout(self.layout)
+
+        btn1 = QPushButton("Rotate left", self)
+        btn1.clicked.connect(self.rotate_l)
+
+        btn2 = QPushButton("Rotate right", self)
+        btn2.clicked.connect(self.rotate_r)
 
         self.scene = QGraphicsScene()
         self.scene.setSceneRect(0, 0, w, h)
 
         self.view = QGraphicsView(self.scene)
+
+        btn_layout.addWidget(btn1)
+        btn_layout.addWidget(btn2)
+
         self.layout.addWidget(self.view)
+        self.layout.addLayout(btn_layout)
 
         qt_image = convert_cv_to_qt(self.img.copy())
         self.scene.clear()
         self.scene.addPixmap(qt_image)
+
+    def rotate(self, clockwise=True):
+        rotated_img = rotate_img(self.img, -90 if clockwise else 90)
+
+        self.img = rotated_img
+
+        qt_image = convert_cv_to_qt(rotated_img)
+        self.scene.clear()
+        self.scene.addPixmap(qt_image)
+
+    def rotate_l(self):
+        self.rotate(False)
+
+    def rotate_r(self):
+        self.rotate(True)
 
 
 class BBoxEditorWidget(QWidget):
@@ -105,6 +137,8 @@ class BBoxEditorWidget(QWidget):
 
         self.bbox = BBox(
             (0, 0), (0, h), (w, 0), (w, h))
+
+        self.bbox.shrink(50)
 
         self.refresh_img()
 
@@ -168,5 +202,5 @@ class OCR():
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = AnalyzerWindow(cv.imread("im/bill0.jpg"))
+    window = AnalyzerWindow(cv.imread("billimg2.jpg"))
     sys.exit(app.exec_())
