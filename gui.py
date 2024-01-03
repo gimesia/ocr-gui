@@ -14,16 +14,13 @@ from utils import image2pixelmap, mask_white_objects
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.webcam_widget = WebcamWidget(self.open_new_window)
-        self.init_ui()
-        self.show()
-        self.showMaximized()
-
-    def init_ui(self):
-        # self.setGeometry(100, 100, 640, 480)
-        self.setGeometry(100, 100, 854, 640)
         self.setWindowTitle('Main Window')
+
+        self.webcam_widget = WebcamWidget(self.open_new_window)
         self.setCentralWidget(self.webcam_widget)
+
+        self.showMaximized()
+        # self.show()
 
     def open_new_window(self):
         if self.webcam_widget.analyzed_img is not None:
@@ -50,13 +47,15 @@ class WebcamWidget(QWidget):
         super().__init__()
         self.open_analyzer = open_analyzer
 
+        self.analyzed_img = None
+        self.uploaded_img = False
+
         self.video_capture = cv.VideoCapture(0)
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_frame)
         self.timer.start(10)  # Update frame every 10 milliseconds
+
         self.init_ui()
-        self.analyzed_img = None
-        self.uploaded_img = False
 
     def capture_frame(self):
         self.uploaded_img = False
@@ -68,13 +67,10 @@ class WebcamWidget(QWidget):
                 self, 'Open File', '/')
             path, extension = os.path.splitext(str(fname[0]))
             im = cv.imread(fname[0])
-            print(im.shape)
             self.analyzed_img = im
-            print(im.shape)
 
         except Exception as e:
-            print('Something went wrong')
-            print(e)
+            print(f'Something went wrong\n{e}')
 
         finally:
             # fname is a tuple where the first element is the file path
@@ -82,8 +78,7 @@ class WebcamWidget(QWidget):
             self.uploaded_img = True
 
     def init_ui(self):
-        # Use QGridLayout to create a 2x2 grid layout
-        layout = QGridLayout()
+        layout = QVBoxLayout()
 
         # Add camera feed labels to the first column
         self.label_normal = QLabel(self)
@@ -115,21 +110,26 @@ class WebcamWidget(QWidget):
         sub_layout1.addWidget(button2)
         sub_layout2.addWidget(button3)
 
-        # Add normal feed to the top cell of the first column
-        layout.addWidget(self.label_normal, 0, 0)
-        # Add thresholded feed to the bottom cell of the first column
-        layout.addWidget(self.label_threshold, 1, 0)
-        layout.addWidget(self.label_masked, 1, 1)
+        frames_layout = QHBoxLayout()
+        frames_layout.addWidget(self.label_normal)
+        frames_layout.addWidget(self.label_threshold)
 
         btn_layout.addLayout(sub_layout1)
         btn_layout.addLayout(sub_layout2)
 
         # Add buttons to the top-right cell
-        layout.addLayout(btn_layout, 0, 1)
+        layout.addLayout(frames_layout)
+        layout.addLayout(btn_layout)
         self.setLayout(layout)
 
     def update_frame(self):
         ret, frame = self.video_capture.read()
+
+        # Rescale the image
+        scale_factor = 1.75
+        frame = cv.resize(frame, None, fx=scale_factor,
+                          fy=scale_factor, interpolation=cv.INTER_AREA)
+
         if ret:
             # Topleft
             frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)

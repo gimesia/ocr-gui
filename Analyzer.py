@@ -2,11 +2,10 @@ import sys
 
 import numpy as np
 import cv2 as cv
-import pytesseract
-from pytesseract import Output
 
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QGraphicsView, QGraphicsScene, QPushButton, QMainWindow
 
+from OCR import OCR
 from utils import BBox, convert_cv_to_qt, cut_straight_bbox_img, rotate_img
 
 
@@ -35,6 +34,21 @@ class AnalyzerWindow(QMainWindow):
 
         self.showMaximized()
 
+    def perform_ocr(self):
+        if self.cip_widget is None or self.cip_widget.img is None:
+            return
+
+        ocr_processor = OCR(self.cut_img)
+        recognized_sentences = ocr_processor.analyze_img(self.cip_widget.img)
+
+        # Display recognized sentences in a QTextEdit for editing
+        self.display_recognized_sentences(recognized_sentences)
+
+    def display_recognized_sentences(self, recognized_sentences):
+        # Implement code to display recognized sentences in a PyQt widget (e.g., QTextEdit)
+        # Create a QTextEdit widget and populate it with recognized sentences for editing
+        pass
+
     def set_image(self, img: np.ndarray):
         self.img = img
 
@@ -52,7 +66,7 @@ class AnalyzerWindow(QMainWindow):
         cip_widget = CutImagePreviewWidget(self.cut_img)
         self.cip_widget = cip_widget
         btn = QPushButton("OCR!", self)
-        btn.clicked.connect(self.cut_image)
+        btn.clicked.connect(self.perform_ocr)
 
         layout = QHBoxLayout()
         layout.addWidget(cip_widget)
@@ -63,9 +77,11 @@ class AnalyzerWindow(QMainWindow):
         self.central_widget = widget
         self.setCentralWidget(self.central_widget)
 
-    def rotate_cut_img(self, clockwise=True):
-        if self.cut_img is None:
+    def ocr(self):
+        if self.cip_widget is None:
             return
+        else:
+            self.cut_img = self.cip_widget.img
 
 
 class CutImagePreviewWidget(QWidget):
@@ -138,7 +154,7 @@ class BBoxEditorWidget(QWidget):
         self.bbox = BBox(
             (0, 0), (0, h), (w, 0), (w, h))
 
-        self.bbox.shrink(50)
+        self.bbox.shrink(100)
 
         self.refresh_img()
 
@@ -182,22 +198,22 @@ class BBoxEditorWidget(QWidget):
         self.scene.addPixmap(qt_image)
 
 
-class OCR():
-    def __init__(self):
-        pass
+# class OCR():
+#     def __init__(self):
+#         pass
 
-    def analyze_img(img: np.ndarray):
-        """WIP!
-        """
-        d = pytesseract.image_to_data(img, output_type=Output.DICT)
-        print(d.keys())
-        n_boxes = len(d['text'])
+#     def analyze_img(img: np.ndarray):
+#         """WIP!
+#         """
+#         d = pytesseract.image_to_data(img, output_type=Output.DICT)
+#         print(d.keys())
+#         n_boxes = len(d['text'])
 
-        for i in range(n_boxes):
-            if int(d['conf'][i]) > 60:
-                (x, y, w, h) = (d['left'][i], d['top']
-                                [i], d['width'][i], d['height'][i])
-                img = cv.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+#         for i in range(n_boxes):
+#             if int(d['conf'][i]) > 60:
+#                 (x, y, w, h) = (d['left'][i], d['top']
+#                                 [i], d['width'][i], d['height'][i])
+#                 img = cv.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
 
 if __name__ == "__main__":
