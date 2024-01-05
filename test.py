@@ -1,60 +1,82 @@
 import cv2
 import pytesseract
-import pytesseract
+import sys
+from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget, QTextEdit, QHBoxLayout
+from PyQt5.QtGui import QPixmap, QImage, QPainter, QFont
+from PyQt5.QtCore import Qt
 
-# Set the path to the Tesseract executable
-# Replace with your Tesseract path
+# Path to Tesseract executable (change this based on your installation)
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
-# Load the image
-image_path = 'billimg2.jpg'
-img = cv2.imread(image_path)
 
-scale_factor = 0.5  # Change this value to scale by a different factor
+class ImageWindow(QMainWindow):
+    def __init__(self, image_path):
+        super().__init__()
 
-# Rescale the image
-rescaled_img = cv2.resize(img, None, fx=scale_factor,
-                          fy=scale_factor, interpolation=cv2.INTER_AREA)
+        self.image_path = image_path
+        self.init_ui()
 
-# img = rescaled_img
+    def init_ui(self):
+        self.setWindowTitle("Text Extraction with PyQt")
+        self.central_widget = QWidget()
+        self.setCentralWidget(self.central_widget)
 
-blurred_img = cv2.GaussianBlur(img, (3, 3), 0)
+        layout = QHBoxLayout()
 
-# Convert the image to grayscale
-gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-gray = cv2.cvtColor(blurred_img, cv2.COLOR_BGR2GRAY)
+        # Widget to display the image with bounding boxes
+        self.image_label = QLabel(alignment=Qt.AlignCenter)
+        layout.addWidget(self.image_label)
 
-# Perform thresholding to obtain a binary image
-_, thresh = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY_INV)
-thresh = cv2.adaptiveThreshold(
-    gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
-ret3, thresh = cv2.threshold(
-    gray, 0, 255, cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
+        # Widget to display and edit extracted text
+        self.text_edit = QTextEdit()
+        layout.addWidget(self.text_edit)
 
-# Show the image with bounding boxes
-cv2.imshow('Image with Bounding Boxes', thresh)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+        self.centralWidget().setLayout(layout)
+
+        # Read the image using OpenCV
+        img = cv2.imread(self.image_path)
+
+        # Use pytesseract to extract text from the image
+        extracted_text = pytesseract.image_to_string(img, lang='eng')
+
+        # Split extracted text into lines
+        lines = extracted_text.split('\n')
+
+        # Draw bounding boxes around lines
+        for line in lines:
+            line_img = cv2.putText(img.copy(
+            ), line, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+            h, w, _ = line_img.shape
+            boxes = pytesseract.image_to_boxes(line_img, lang='eng')
+
+            line_boxes = boxes.splitlines()
+
+            # Get coordinates of the bounding box for the line
+            if line_boxes:
+                x1, y1, x2, y2 = map(int, line_boxes[0].split()[1:5])
+                cv2.rectangle(img, (x1, h - y1), (x2, h - y2), (0, 255, 0), 1)
+
+        # Display extracted text in the QTextEdit widget
+        self.text_edit.setPlainText(extracted_text)
+
+        # Convert image to display in PyQt
+        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        h, w, ch = img_rgb.shape
+        bytes_per_line = ch * w
+        q_img = QImage(img_rgb.data, w, h, bytes_per_line,
+                       QImage.Format_RGB888)
+        pixmap = QPixmap.fromImage(q_img)
+
+        self.image_label.setPixmap(pixmap)
 
 
-# Perform OCR and get bounding boxes
-boxes = pytesseract.image_to_boxes(thresh)
+def main():
+    app = QApplication(sys.argv)
+    window = ImageWindow('billimg4.jpg')  # Replace with your image path
+    window.setGeometry(100, 100, 1000, 600)
+    window.show()
+    sys.exit(app.exec_())
 
-# Draw bounding boxes on the original image
-for box in boxes.splitlines():
-    box = box.split()
-    x_start, y_start, x_end, y_end = int(
-        box[1]), int(box[2]), int(box[3]), int(box[4])
-    cv2.rectangle(img, (x_start, img.shape[0] - y_start),
-                  (x_end, img.shape[0] - y_end), (0, 255, 0), 2)
 
-print(boxes)
-# Show the image with bounding boxes
-
-# Rescale the image
-img = cv2.resize(img, None, fx=scale_factor,
-                 fy=scale_factor, interpolation=cv2.INTER_AREA)
-
-cv2.imshow('Image with Bounding Boxes', img)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+if __name__ == '__main__':
+    main()

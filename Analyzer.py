@@ -3,7 +3,7 @@ import sys
 import numpy as np
 import cv2 as cv
 
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QGraphicsView, QGraphicsScene, QPushButton, QMainWindow
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QGraphicsView, QGraphicsScene, QPushButton, QMainWindow, QTextEdit, QLabel
 
 from OCR import OCR
 from utils import BBox, convert_cv_to_qt, cut_straight_bbox_img, rotate_img
@@ -21,7 +21,7 @@ class AnalyzerWindow(QMainWindow):
         self.bbox_editor = BBoxEditorWidget(self.img)
 
         self.control_button = QPushButton("Cut", self)
-        self.control_button.clicked.connect(self.cut_image)
+        self.control_button.clicked.connect(self.perform_cut_image)
 
         self.central_widget = QWidget()
 
@@ -34,25 +34,10 @@ class AnalyzerWindow(QMainWindow):
 
         self.showMaximized()
 
-    def perform_ocr(self):
-        if self.cip_widget is None or self.cip_widget.img is None:
-            return
-
-        ocr_processor = OCR(self.cut_img)
-        recognized_sentences = ocr_processor.analyze_img(self.cip_widget.img)
-
-        # Display recognized sentences in a QTextEdit for editing
-        self.display_recognized_sentences(recognized_sentences)
-
-    def display_recognized_sentences(self, recognized_sentences):
-        # Implement code to display recognized sentences in a PyQt widget (e.g., QTextEdit)
-        # Create a QTextEdit widget and populate it with recognized sentences for editing
-        pass
-
     def set_image(self, img: np.ndarray):
         self.img = img
 
-    def cut_image(self):
+    def perform_cut_image(self):
         mask = self.bbox_editor.bbox.create_mask(self.img.shape).astype(bool)
 
         self.cut_img = self.img * mask
@@ -77,11 +62,34 @@ class AnalyzerWindow(QMainWindow):
         self.central_widget = widget
         self.setCentralWidget(self.central_widget)
 
-    def ocr(self):
-        if self.cip_widget is None:
+    def perform_ocr(self):
+        if self.cip_widget is None or self.cip_widget.img is None:
             return
-        else:
-            self.cut_img = self.cip_widget.img
+
+        self.central_widget = QWidget()
+
+        layout = QVBoxLayout()
+
+        image_label = QLabel()
+        layout.addWidget(image_label)
+
+        # Widget to display and edit extracted text
+        text_edit = QTextEdit()
+        layout.addWidget(text_edit)
+
+        self.central_widget.setLayout(layout)
+        self.setCentralWidget(self.central_widget)
+
+        ocr = OCR()
+        box_img , recognized_sentences = ocr.analyze_img(self.cip_widget.img)
+
+        # Display recognized sentences in a QTextEdit for editing
+        self.display_recognized_sentences(recognized_sentences)
+
+    def display_recognized_sentences(self, recognized_sentences):
+        # Implement code to display recognized sentences in a PyQt widget (e.g., QTextEdit)
+        # Create a QTextEdit widget and populate it with recognized sentences for editing
+        pass
 
 
 class CutImagePreviewWidget(QWidget):
@@ -196,24 +204,6 @@ class BBoxEditorWidget(QWidget):
         qt_image = convert_cv_to_qt(img)
         self.scene.clear()
         self.scene.addPixmap(qt_image)
-
-
-# class OCR():
-#     def __init__(self):
-#         pass
-
-#     def analyze_img(img: np.ndarray):
-#         """WIP!
-#         """
-#         d = pytesseract.image_to_data(img, output_type=Output.DICT)
-#         print(d.keys())
-#         n_boxes = len(d['text'])
-
-#         for i in range(n_boxes):
-#             if int(d['conf'][i]) > 60:
-#                 (x, y, w, h) = (d['left'][i], d['top']
-#                                 [i], d['width'][i], d['height'][i])
-#                 img = cv.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
 
 if __name__ == "__main__":
