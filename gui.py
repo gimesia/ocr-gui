@@ -1,14 +1,12 @@
-import logging
 import sys
 import os
 import cv2 as cv
 import numpy as np
 from PyQt5.QtWidgets import QMainWindow, QApplication, QFileDialog, QWidget, QLabel, QMessageBox, QHBoxLayout, QVBoxLayout, QGridLayout, QPushButton
-from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import QTimer, Qt
 
 from Analyzer import AnalyzerWindow
-from utils import image2pixelmap, mask_white_objects
+from utils import image2pixelmap, mask_white_objects, scale_image_to_min_height
 
 
 class MainWindow(QMainWindow):
@@ -24,7 +22,6 @@ class MainWindow(QMainWindow):
 
     def open_new_window(self):
         if self.webcam_widget.analyzed_img is not None:
-            print(self.webcam_widget.analyzed_img.shape)
             self.new_window = AnalyzerWindow(self.webcam_widget.analyzed_img)
             self.new_window.show()
 
@@ -59,7 +56,9 @@ class WebcamWidget(QWidget):
 
     def capture_frame(self):
         self.uploaded_img = False
-        _, self.analyzed_img = self.video_capture.read()
+        _, analyzed_img = self.video_capture.read()
+        analyzed_img = scale_image_to_min_height(analyzed_img)
+        self.analyzed_img = analyzed_img
 
     def upload_file_dialog(self):
         try:
@@ -67,6 +66,7 @@ class WebcamWidget(QWidget):
                 self, 'Open File', '/')
             path, extension = os.path.splitext(str(fname[0]))
             im = cv.imread(fname[0])
+            im = scale_image_to_min_height(im)
             self.analyzed_img = im
 
         except Exception as e:
@@ -124,11 +124,11 @@ class WebcamWidget(QWidget):
 
     def update_frame(self):
         ret, frame = self.video_capture.read()
-
+        frame = scale_image_to_min_height(frame)
         # Rescale the image
-        scale_factor = 1.75
-        frame = cv.resize(frame, None, fx=scale_factor,
-                          fy=scale_factor, interpolation=cv.INTER_AREA)
+        # scale_factor = 1.75
+        # frame = cv.resize(frame, None, fx=scale_factor,
+        #                   fy=scale_factor, interpolation=cv.INTER_AREA)
 
         if ret:
             # Topleft

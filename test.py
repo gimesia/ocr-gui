@@ -42,21 +42,19 @@ class ImageWindow(QMainWindow):
         # Split extracted text into lines
         lines = extracted_text.split('\n')
 
-        # Draw bounding boxes around lines
-        for line in lines:
-            line_img = cv2.putText(img.copy(
-            ), line, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
-            h, w, _ = line_img.shape
-            boxes = pytesseract.image_to_boxes(line_img, lang='eng')
+        gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-            line_boxes = boxes.splitlines()
+        custom_config = r'--oem 3 --psm 6'
+        custom_config = r'--oem 3 --psm 6'
+        data = pytesseract.image_to_data(
+            img, output_type=pytesseract.Output.DICT)
 
-            # Get coordinates of the bounding box for the line
-            if line_boxes:
-                x1, y1, x2, y2 = map(int, line_boxes[0].split()[1:5])
-                cv2.rectangle(img, (x1, h - y1), (x2, h - y2), (0, 255, 0), 1)
+        # Draw bounding boxes around detected text regions
+        for i in range(len(data['text'])):
+            x, y, w, h = data['left'][i], data['top'][i], data['width'][i], data['height'][i]
+            # if int(data['conf'][i]) > 0:  # Filter out low-confidence detections
+            cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 1)
 
-        # Display extracted text in the QTextEdit widget
         self.text_edit.setPlainText(extracted_text)
 
         # Convert image to display in PyQt
@@ -72,7 +70,7 @@ class ImageWindow(QMainWindow):
 
 def main():
     app = QApplication(sys.argv)
-    window = ImageWindow('billimg4.jpg')  # Replace with your image path
+    window = ImageWindow('img.jpg')  # Replace with your image path
     window.setGeometry(100, 100, 1000, 600)
     window.show()
     sys.exit(app.exec_())

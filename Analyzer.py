@@ -4,9 +4,10 @@ import numpy as np
 import cv2 as cv
 
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QGraphicsView, QGraphicsScene, QPushButton, QMainWindow, QTextEdit, QLabel
+from PyQt5.QtCore import Qt
 
 from OCR import OCR
-from utils import BBox, convert_cv_to_qt, cut_straight_bbox_img, rotate_img
+from utils import BBox, convert_cv_to_qt, cut_straight_bbox_img, image2pixelmap, rotate_img
 
 
 class AnalyzerWindow(QMainWindow):
@@ -53,7 +54,7 @@ class AnalyzerWindow(QMainWindow):
         btn = QPushButton("OCR!", self)
         btn.clicked.connect(self.perform_ocr)
 
-        layout = QHBoxLayout()
+        layout = QVBoxLayout()
         layout.addWidget(cip_widget)
         layout.addWidget(btn)
 
@@ -66,25 +67,23 @@ class AnalyzerWindow(QMainWindow):
         if self.cip_widget is None or self.cip_widget.img is None:
             return
 
-        self.central_widget = QWidget()
+        # self.central_widget = QWidget()
 
-        layout = QVBoxLayout()
+        # layout = QVBoxLayout()
 
-        image_label = QLabel()
-        layout.addWidget(image_label)
+        # image_label = QLabel()
+        # layout.addWidget(image_label)
 
-        # Widget to display and edit extracted text
-        text_edit = QTextEdit()
-        layout.addWidget(text_edit)
+        # # Widget to display and edit extracted text
+        # text_edit = QTextEdit()
+        # layout.addWidget(text_edit)
 
-        self.central_widget.setLayout(layout)
+        # self.central_widget.setLayout(layout)
+        # self.setCentralWidget(self.central_widget)
+
+        ocr_widget = OCR(self.cip_widget.img)
+        self.central_widget = ocr_widget
         self.setCentralWidget(self.central_widget)
-
-        ocr = OCR()
-        box_img , recognized_sentences = ocr.analyze_img(self.cip_widget.img)
-
-        # Display recognized sentences in a QTextEdit for editing
-        self.display_recognized_sentences(recognized_sentences)
 
     def display_recognized_sentences(self, recognized_sentences):
         # Implement code to display recognized sentences in a PyQt widget (e.g., QTextEdit)
@@ -99,8 +98,8 @@ class CutImagePreviewWidget(QWidget):
         h, w, ch = self.img.shape
         self.resize(w, h)
 
-        self.layout = QHBoxLayout()
-        btn_layout = QVBoxLayout()
+        self.layout = QVBoxLayout()
+        btn_layout = QHBoxLayout()
         self.setLayout(self.layout)
 
         btn1 = QPushButton("Rotate left", self)
@@ -109,29 +108,23 @@ class CutImagePreviewWidget(QWidget):
         btn2 = QPushButton("Rotate right", self)
         btn2.clicked.connect(self.rotate_r)
 
-        self.scene = QGraphicsScene()
-        self.scene.setSceneRect(0, 0, w, h)
-
-        self.view = QGraphicsView(self.scene)
+        self.image_label = QLabel(alignment=Qt.AlignCenter)
 
         btn_layout.addWidget(btn1)
         btn_layout.addWidget(btn2)
 
-        self.layout.addWidget(self.view)
+        self.layout.addWidget(self.image_label)
         self.layout.addLayout(btn_layout)
 
         qt_image = convert_cv_to_qt(self.img.copy())
-        self.scene.clear()
-        self.scene.addPixmap(qt_image)
+        self.image_label.setPixmap(qt_image)
 
     def rotate(self, clockwise=True):
         rotated_img = rotate_img(self.img, -90 if clockwise else 90)
-
         self.img = rotated_img
 
         qt_image = convert_cv_to_qt(rotated_img)
-        self.scene.clear()
-        self.scene.addPixmap(qt_image)
+        self.image_label.setPixmap(qt_image)
 
     def rotate_l(self):
         self.rotate(False)

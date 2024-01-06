@@ -3,71 +3,55 @@ import cv2 as cv
 
 import pytesseract
 from pytesseract import Output
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QTextEdit, QLabel
+from PyQt5.QtCore import Qt
+
+from utils import convert_cv_to_qt, image2pixelmap
 
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 
-class OCR():
-    def __init__(self):
+class OCR(QWidget):
+    def __init__(self, img):
+        super().__init__()
+        self.img = img
         self.lines = []
 
-    def analyze_img(self, img: np.ndarray):
-        image = img.copy()
-        # Convert the image to grayscale
-        gray_image = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+        self.text_edit = QTextEdit()
+        self.image_label = QLabel(alignment=Qt.AlignCenter)
 
-        # Use pytesseract to do OCR on the image
+        save_btn = QPushButton("Save")
+        self.analyze_img()
+
+        layout = QHBoxLayout()
+        sublayout = QVBoxLayout()
+
+        sublayout.addWidget(self.text_edit)
+        sublayout.addWidget(save_btn)
+
+        layout.addWidget(self.image_label)
+        layout.addLayout(sublayout)
+
+        self.setLayout(layout)
+
+        self.analyze_img()
+
+    def analyze_img(self):
+        img = self.img.copy()
+        # gray_img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+        # _, thresholded = cv.threshold(
+        #     gray_img, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU)
+
+        extracted_text = pytesseract.image_to_string(img)
+        self.lines = extracted_text.split('\n')
+
         data = pytesseract.image_to_data(
-            gray_image, output_type=pytesseract.Output.DICT)
+            img, output_type=pytesseract.Output.DICT)
 
-        grouped_boxes = {}
-        grouped_texts = {}
-        boxes = []
+        for i in range(len(data['text'])):
+            x, y, w, h = data['left'][i], data['top'][i], data['width'][i], data['height'][i]
+            # if int(data['conf'][i]) > 0:  # Filter out low-confidence detections
+            cv.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 1)
 
-        # Iterate through each detected text
-        for i, text in enumerate(data['text']):
-            if text:
-                x, y, w, h = data['left'][i], data['top'][i], data['width'][i], data['height'][i]
-                # Draw bounding box around the text
-                cv.rectangle(image, (x, y), (x + w, y + h), (0, 0, 255), 1)
-
-                threshold = 12  # Adjust this value as needed
-
-                # Check if there's a group already near the current box
-                found = False
-                for key, value in grouped_boxes.items():
-                    if abs(y - key) < threshold:
-                        grouped_boxes[key].append((x, y, w, h))
-                        grouped_texts[key].append(text)
-                        found = True
-                        break
-
-                # If no group found nearby, create a new group
-                if not found:
-                    grouped_boxes[y] = [(x, y, w, h)]
-                    grouped_texts[y] = [text]
-
-        print(grouped_texts)
-
-        for key, value in grouped_boxes.items():
-            x_s = list(map(lambda x: x[0], value))
-            y_s = list(map(lambda x: x[1], value))
-
-            min_box = value[x_s.index(min(x_s))]
-            max_box = value[x_s.index(max(x_s))]
-
-            min_y_box = value[y_s.index(min(y_s))]
-            max_y_box = value[y_s.index(max(y_s))]
-
-            tl = (min_box[0], min_y_box[1])
-            br = (max_box[0] + max_box[2], max_y_box[1] + min_y_box[3])
-
-            cv.rectangle(image, tl, br, (0, 255, 0), 1)
-
-            boxes.append((tl, br))
-
-        lines = []
-
-            
-
-        return img
+        self.text_edit.setPlainText(extracted_text)
+        self.image_label.setPixmap(convert_cv_to_qt(img))

@@ -106,6 +106,9 @@ def image2pixelmap(img: np.ndarray, shape=None):
 
     bytes_per_line = 3 * width
 
+    print(type(img))
+    print((width, height))
+
     image = QImage(img, width, height,
                    bytes_per_line, QImage.Format_RGB888)
 
@@ -198,3 +201,23 @@ def rotate_img(img, angle):
         img, rotation_matrix, (new_width, new_height), borderMode=cv.BORDER_CONSTANT)
 
     return rotated_img
+
+
+def scale_image_to_min_height(image, min_height=920):
+    # Get image dimensions
+    height, width = image.shape[:2]
+
+    if height < min_height:
+        # Calculate the scaling factor to achieve the minimum height while maintaining aspect ratio
+        scale_factor = min_height / height
+
+        # Calculate the new dimensions
+        new_height = int(height * scale_factor)
+        new_width = int(width * scale_factor)
+
+        # Resize the image while preserving aspect ratio
+        scaled_image = cv.resize(image, (new_width, new_height))
+
+        return scaled_image
+    else:
+        return image
