@@ -65,7 +65,7 @@ class OCRWidget(QWidget):
         file_path = find_available_filename(file_path)
 
         with open(file_path, "w") as file:
-            for item in self.lines:
-                file.write("%s\n" % item)
+            text = self.text_edit.toPlainText()
+            file.writelines(text)
 
         self.close_window_command()

@@ -1,11 +1,9 @@
+import numpy as np
 import cv2 as cv
 
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QGraphicsScene, QGraphicsView
 
 from utils import BBox, image2pixelmap
-
-
-import numpy as np
 
 
 class BBoxEditorWidget(QWidget):
@@ -30,7 +28,7 @@ class BBoxEditorWidget(QWidget):
         self.bbox = BBox(
             (0, 0), (0, h), (w, 0), (w, h))
 
-        self.bbox.shrink(100)
+        self.bbox.shrink(75)
 
         self.refresh_img()
 
