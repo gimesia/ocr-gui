@@ -1,14 +1,16 @@
 import os
 from pathlib import Path
 import cv2 as cv
-
 import pytesseract
+
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QTextEdit, QLabel
 from PyQt5.QtCore import Qt
 
-from utils import find_available_filename, image2pixelmap
+from utils import find_available_filename, image2pixelmap, sharpen_image
+from config import tesseract_path, save_path
 
-pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+
+pytesseract.pytesseract.tesseract_cmd = tesseract_path
 
 
 class OCRWidget(QWidget):
@@ -16,7 +18,7 @@ class OCRWidget(QWidget):
         super().__init__()
         self.close_window_command = close_window_command
 
-        self.img = img
+        self.img = (img)
         self.lines = []
 
         self.text_edit = QTextEdit()
@@ -57,8 +59,8 @@ class OCRWidget(QWidget):
         self.image_label.setPixmap(image2pixelmap(img))
 
     def save_extracted_text(self):
-        download_path = Path.home() / "Downloads"
-        file_path = os.path.join(download_path, "ocr_text")
+        path = save_path
+        file_path = os.path.join(path, "ocr_text")
 
         file_path = find_available_filename(file_path)
 

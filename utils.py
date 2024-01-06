@@ -34,7 +34,6 @@ class BBox():
         self.edited_point_index = min_dist_index
 
     def change_point(self, point):
-        print(point)
         if self.edited_point_index == 0:
             self.tl = point
         elif self.edited_point_index == 1:
@@ -45,7 +44,7 @@ class BBox():
             self.br = point
 
         self.edited_point_index = None
-        self.__str__()
+        # self.__str__()
 
     def shrink(self, shrink_pix=10):
         self.tl = (self.tl[0]+shrink_pix, self.tl[1]+shrink_pix)
@@ -212,6 +211,7 @@ def scale_image_to_min_height(image, min_height=920):
     else:
         return image
 
+
 def find_available_filename(file_path):
     if not os.path.exists(file_path):
         return file_path  # If the file doesn't exist, return the original filename
@@ -223,3 +223,15 @@ def find_available_filename(file_path):
         counter += 1
 
     return f"{base_name}_{counter}{extension}"
+
+
+def sharpen_image(image):
+    # Define the sharpening kernel
+    kernel = np.array([[0, -1, 0],
+                       [-1, 4, -1],
+                       [0, -1, 0]])
+
+    # Apply the kernel to the image using filter2D function
+    sharpened = cv.filter2D(image, -1, kernel)
+
+    return sharpened

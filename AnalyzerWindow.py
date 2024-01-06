@@ -78,5 +78,5 @@ class AnalyzerWindow(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = AnalyzerWindow(cv.imread("img.jpg"))
+    window = AnalyzerWindow(cv.imread("test_images/billimg2.jpg"))
     sys.exit(app.exec_())
