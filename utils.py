@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import cv2 as cv
 from PyQt5.QtGui import QImage, QPixmap
@@ -210,3 +211,15 @@ def scale_image_to_min_height(image, min_height=920):
         return scaled_image
     else:
         return image
+
+def find_available_filename(file_path):
+    if not os.path.exists(file_path):
+        return file_path  # If the file doesn't exist, return the original filename
+
+    base_name, extension = os.path.splitext(file_path)
+    counter = 1
+
+    while os.path.exists(f"{base_name}_{counter}{extension}"):
+        counter += 1
+
+    return f"{base_name}_{counter}{extension}"

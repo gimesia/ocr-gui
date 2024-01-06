@@ -2,11 +2,11 @@ import sys
 import os
 import cv2 as cv
 import numpy as np
-from PyQt5.QtWidgets import QMainWindow, QApplication, QFileDialog, QWidget, QLabel, QMessageBox, QHBoxLayout, QVBoxLayout, QGridLayout, QPushButton
+from PyQt5.QtWidgets import QMainWindow, QApplication, QFileDialog, QWidget, QLabel, QHBoxLayout, QVBoxLayout, QPushButton
 from PyQt5.QtCore import QTimer, Qt
+from AnalyzerWindow import AnalyzerWindow
 
-from Analyzer import AnalyzerWindow
-from utils import image2pixelmap, mask_white_objects, scale_image_to_min_height
+from utils import image2pixelmap, scale_image_to_min_height
 
 
 class MainWindow(QMainWindow):
@@ -18,7 +18,6 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.webcam_widget)
 
         self.showMaximized()
-        # self.show()
 
     def open_new_window(self):
         if self.webcam_widget.analyzed_img is not None:
@@ -80,7 +79,6 @@ class WebcamWidget(QWidget):
     def init_ui(self):
         layout = QVBoxLayout()
 
-        # Add camera feed labels to the first column
         self.label_normal = QLabel(self)
         self.label_normal.setAlignment(Qt.AlignCenter)
 
@@ -101,7 +99,6 @@ class WebcamWidget(QWidget):
         button3 = QPushButton("Analyze", self)
         button3.clicked.connect(self.open_analyzer)
 
-        # Create a sub-layout (e.g., QVBoxLayout) for the grid cell
         btn_layout = QVBoxLayout()
         sub_layout1 = QHBoxLayout()
         sub_layout2 = QHBoxLayout()
@@ -117,7 +114,6 @@ class WebcamWidget(QWidget):
         btn_layout.addLayout(sub_layout1)
         btn_layout.addLayout(sub_layout2)
 
-        # Add buttons to the top-right cell
         layout.addLayout(frames_layout)
         layout.addLayout(btn_layout)
         self.setLayout(layout)
@@ -125,41 +121,25 @@ class WebcamWidget(QWidget):
     def update_frame(self):
         ret, frame = self.video_capture.read()
         frame = scale_image_to_min_height(frame)
-        # Rescale the image
-        # scale_factor = 1.75
-        # frame = cv.resize(frame, None, fx=scale_factor,
-        #                   fy=scale_factor, interpolation=cv.INTER_AREA)
 
         if ret:
-            # Topleft
-            frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
             self.label_normal.setPixmap(image2pixelmap(frame))
 
-            # Convert frame to grayscale for adaptive thresholding (example processing step)
-            gray_frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
-            threshold_frame = gray_frame
+            capture_frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
 
-            # Convert frames to appropriate format for displaying in QLabel
-            threshold_frame = cv.cvtColor(threshold_frame, cv.COLOR_GRAY2RGB)
-            mask_frame = cv.cvtColor(threshold_frame, cv.COLOR_RGB2BGR)
+            capture_frame = cv.cvtColor(capture_frame, cv.COLOR_GRAY2RGB)
 
             if self.analyzed_img is not None:
                 if self.analyzed_img.shape != frame.shape:
                     resized_analyzed_img = cv.resize(
                         self.analyzed_img, (frame.shape[1], frame.shape[0]), cv.INTER_AREA)
 
-                    threshold_frame = cv.cvtColor(
-                        resized_analyzed_img, cv.COLOR_BGR2RGB)
-                    mask_frame = resized_analyzed_img
+                    capture_frame = resized_analyzed_img
                 else:
-                    threshold_frame = cv.cvtColor(
-                        self.analyzed_img, cv.COLOR_BGR2RGB)
-                    mask_frame = self.analyzed_img
+                    capture_frame = self.analyzed_img
 
             # Set the QPixmap to the QLabel widgets
-            self.label_threshold.setPixmap(image2pixelmap(threshold_frame))
-            self.label_masked.setPixmap(
-                image2pixelmap(mask_white_objects(mask_frame)))
+            self.label_threshold.setPixmap(image2pixelmap(capture_frame))
 
             if self.uploaded_img:
                 pass
