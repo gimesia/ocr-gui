@@ -7,13 +7,13 @@ from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QGr
 from PyQt5.QtCore import Qt
 
 from OCR import OCR
-from utils import BBox, convert_cv_to_qt, cut_straight_bbox_img, image2pixelmap, rotate_img
+from utils import BBox, cut_straight_bbox_img, image2pixelmap, rotate_img
 
 
 class AnalyzerWindow(QMainWindow):
-    def __init__(self, img):  # Welcome back
+    def __init__(self, img):
         super().__init__()
-        self.setWindowTitle('Extract text')
+        self.setWindowTitle("Extract text")
 
         self.img = img
         self.cut_img = None
@@ -67,28 +67,9 @@ class AnalyzerWindow(QMainWindow):
         if self.cip_widget is None or self.cip_widget.img is None:
             return
 
-        # self.central_widget = QWidget()
-
-        # layout = QVBoxLayout()
-
-        # image_label = QLabel()
-        # layout.addWidget(image_label)
-
-        # # Widget to display and edit extracted text
-        # text_edit = QTextEdit()
-        # layout.addWidget(text_edit)
-
-        # self.central_widget.setLayout(layout)
-        # self.setCentralWidget(self.central_widget)
-
         ocr_widget = OCR(self.cip_widget.img)
         self.central_widget = ocr_widget
         self.setCentralWidget(self.central_widget)
-
-    def display_recognized_sentences(self, recognized_sentences):
-        # Implement code to display recognized sentences in a PyQt widget (e.g., QTextEdit)
-        # Create a QTextEdit widget and populate it with recognized sentences for editing
-        pass
 
 
 class CutImagePreviewWidget(QWidget):
@@ -116,14 +97,14 @@ class CutImagePreviewWidget(QWidget):
         self.layout.addWidget(self.image_label)
         self.layout.addLayout(btn_layout)
 
-        qt_image = convert_cv_to_qt(self.img.copy())
+        qt_image = image2pixelmap(self.img.copy())
         self.image_label.setPixmap(qt_image)
 
     def rotate(self, clockwise=True):
         rotated_img = rotate_img(self.img, -90 if clockwise else 90)
         self.img = rotated_img
 
-        qt_image = convert_cv_to_qt(rotated_img)
+        qt_image = image2pixelmap(rotated_img)
         self.image_label.setPixmap(qt_image)
 
     def rotate_l(self):
@@ -194,12 +175,12 @@ class BBoxEditorWidget(QWidget):
             cv.circle(img, point, rad, (0, 0, 255), thickness)
 
         # Convert the OpenCV image to QPixmap and update the scene
-        qt_image = convert_cv_to_qt(img)
+        qt_image = image2pixelmap(img)
         self.scene.clear()
         self.scene.addPixmap(qt_image)
 
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = AnalyzerWindow(cv.imread("billimg2.jpg"))
+    window = AnalyzerWindow(cv.imread("img.jpg"))
     sys.exit(app.exec_())

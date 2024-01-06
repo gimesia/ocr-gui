@@ -12,7 +12,7 @@ from utils import image2pixelmap, mask_white_objects, scale_image_to_min_height
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle('Main Window')
+        self.setWindowTitle("Main Window")
 
         self.webcam_widget = WebcamWidget(self.open_new_window)
         self.setCentralWidget(self.webcam_widget)
@@ -63,18 +63,18 @@ class WebcamWidget(QWidget):
     def upload_file_dialog(self):
         try:
             fname = QFileDialog.getOpenFileName(
-                self, 'Open File', '/')
+                self, "Open File", "/")
             path, extension = os.path.splitext(str(fname[0]))
             im = cv.imread(fname[0])
             im = scale_image_to_min_height(im)
             self.analyzed_img = im
 
         except Exception as e:
-            print(f'Something went wrong\n{e}')
+            print(f"Something went wrong\n{e}")
 
         finally:
             # fname is a tuple where the first element is the file path
-            print(f'Selected file: {fname[0]}')
+            print(f"Selected file: {fname[0]}")
             self.uploaded_img = True
 
     def init_ui(self):

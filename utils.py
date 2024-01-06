@@ -106,11 +106,9 @@ def image2pixelmap(img: np.ndarray, shape=None):
 
     bytes_per_line = 3 * width
 
-    print(type(img))
-    print((width, height))
-
     image = QImage(img, width, height,
                    bytes_per_line, QImage.Format_RGB888)
+    image = image.rgbSwapped()  # Fix color channels
 
     return QPixmap.fromImage(image)
 
@@ -173,15 +171,6 @@ def convert_qt_to_cv(qt_pixmap):
     buffer.setsize(height * width * 4)
     cv_image = np.array(buffer).reshape((height, width, 4))
     return cv.cvtColor(cv_image, cv.COLOR_RGBA2RGB)
-
-
-def convert_cv_to_qt(cv_image):
-    height, width, channel = cv_image.shape
-    bytes_per_line = 3 * width
-    qt_image = QImage(cv_image.data, width, height,
-                      bytes_per_line, QImage.Format_RGB888)
-    qt_image = qt_image.rgbSwapped()  # Fix color channels
-    return QPixmap.fromImage(qt_image)
 
 
 def rotate_img(img, angle):
