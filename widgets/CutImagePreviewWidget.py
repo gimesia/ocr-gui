@@ -5,6 +5,10 @@ from utils import image2pixelmap, rotate_img
 
 
 class CutImagePreviewWidget(QWidget):
+    """Widget to check the previously cut image,
+    Allows to rotate 90 degrees if the orientation is not correct
+    """
+
     def __init__(self, img):
         super().__init__()
         self.img = img
@@ -33,6 +37,11 @@ class CutImagePreviewWidget(QWidget):
         self.image_label.setPixmap(qt_image)
 
     def rotate(self, clockwise=True):
+        """90 degree rotation of the image, and updating of the image label 
+
+        Args:
+            clockwise (bool, optional): Direction of rotation. Defaults to clockwise.
+        """
         rotated_img = rotate_img(self.img, -90 if clockwise else 90)
         self.img = rotated_img
 

@@ -7,6 +7,9 @@ from utils import BBox, image2pixelmap
 
 
 class BBoxEditorWidget(QWidget):
+    """Widget that lets the user edit the ROI
+    """
+
     def __init__(self, img):
         super().__init__()
         self.img = img
@@ -33,6 +36,13 @@ class BBoxEditorWidget(QWidget):
         self.refresh_img()
 
     def mouse_click_event(self, event):
+        """Click event handler, 
+        first click selects the corner to edit
+        second click repositions the corner
+
+        Args:
+            event: mouseclick event
+        """
         # Get the position of the click
         pos = event.pos()
         mapped_pos = self.view.mapToScene(pos)
@@ -49,6 +59,8 @@ class BBoxEditorWidget(QWidget):
             self.refresh_img(mask)
 
     def refresh_img(self, mask=None):
+        """Creates and displays the image that is masked with the bbox
+        """
         img = self.img.copy()
 
         if mask is not None:

@@ -6,14 +6,17 @@ import pytesseract
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QTextEdit, QLabel
 from PyQt5.QtCore import Qt
 
-from utils import find_available_filename, image2pixelmap, sharpen_image
-from config import tesseract_path, save_path
+from utils import find_available_filename, image2pixelmap
+from config import tesseract_path, tesseract_config, save_path
 
-
+# Setting the tesseract path
 pytesseract.pytesseract.tesseract_cmd = tesseract_path
 
 
 class OCRWidget(QWidget):
+    """Widget that performs the carachter recognition and the saving of the results
+    """
+
     def __init__(self, img, close_window_command):
         super().__init__()
         self.close_window_command = close_window_command
@@ -41,13 +44,16 @@ class OCRWidget(QWidget):
         self.analyze_img()
 
     def analyze_img(self):
+        """Charachter recognition and displaying of results
+        """
         img = self.img.copy()
 
-        extracted_text = pytesseract.image_to_string(img)
+        extracted_text = pytesseract.image_to_string(
+            img, config=tesseract_config)
         self.lines = extracted_text.split("\n")
 
         data = pytesseract.image_to_data(
-            img, output_type=pytesseract.Output.DICT)
+            img, output_type=pytesseract.Output.DICT, config=tesseract_config)
 
         for i in range(len(data["text"])):
             x, y, w, h = data["left"][i], data["top"][i], data["width"][i], data["height"][i]
@@ -59,6 +65,8 @@ class OCRWidget(QWidget):
         self.image_label.setPixmap(image2pixelmap(img))
 
     def save_extracted_text(self):
+        """Saving of results and closing of the window
+        """
         path = save_path
         file_path = os.path.join(path, "ocr_text")
 

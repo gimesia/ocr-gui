@@ -11,7 +11,11 @@ from widgets.OCRWidget import *
 from utils import cut_straight_bbox_img
 
 
-class AnalyzerWindow(QMainWindow):
+class AnalyserWindow(QMainWindow):
+    """Sub-GUI, handles cutting, rotating, character recognition
+    and saving of the results 
+    """
+
     def __init__(self, img):
         super().__init__()
         self.setWindowTitle("Extract text")
@@ -27,7 +31,7 @@ class AnalyzerWindow(QMainWindow):
 
         self.central_widget = QWidget()
 
-        self.layout = QHBoxLayout()
+        self.layout = QVBoxLayout()
         self.layout.addWidget(self.bbox_editor)
         self.layout.addWidget(self.control_button)
 
@@ -36,15 +40,12 @@ class AnalyzerWindow(QMainWindow):
 
         self.showMaximized()
 
-    def set_image(self, img: np.ndarray):
-        self.img = img
-
     def perform_cut_image(self):
+        """Cutting of the image based on the bbox set by the user
+        """
         mask = self.bbox_editor.bbox.create_mask(self.img.shape).astype(bool)
 
         self.cut_img = self.img * mask
-
-        rotation = self.bbox_editor.bbox.get_rotation_angle(self.img.shape)
 
         self.cut_img = cut_straight_bbox_img(
             self.cut_img, self.bbox_editor.bbox)
@@ -78,5 +79,5 @@ class AnalyzerWindow(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = AnalyzerWindow(cv.imread("test_images/billimg2.jpg"))
+    window = AnalyserWindow(cv.imread("test_images/billimg2.jpg"))
     sys.exit(app.exec_())

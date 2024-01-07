@@ -4,12 +4,16 @@ import cv2 as cv
 import numpy as np
 from PyQt5.QtWidgets import QMainWindow, QApplication, QFileDialog, QWidget, QLabel, QHBoxLayout, QVBoxLayout, QPushButton
 from PyQt5.QtCore import QTimer, Qt
-from AnalyzerWindow import AnalyzerWindow
+from AnalyserWindow import AnalyserWindow
 
 from utils import image2pixelmap, scale_image_to_min_height
 
 
 class MainWindow(QMainWindow):
+    """Main GUI, handles the webcamera and upload dialog,
+    AnalyserWindow is opened from here 
+    """
+
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Main Window")
@@ -20,8 +24,10 @@ class MainWindow(QMainWindow):
         self.showMaximized()
 
     def open_new_window(self):
-        if self.webcam_widget.analyzed_img is not None:
-            self.new_window = AnalyzerWindow(self.webcam_widget.analyzed_img)
+        """Creates analyser window from captured or uploaded image
+        """
+        if self.webcam_widget.analysed_img is not None:
+            self.new_window = AnalyserWindow(self.webcam_widget.analysed_img)
             self.new_window.show()
 
             self.setEnabled(False)  # Disable main window
@@ -31,6 +37,8 @@ class MainWindow(QMainWindow):
             print("Capture a frame or upload an image first!")
 
     def eventFilter(self, source, event):
+        """Event filter for QMainWindow, disables MainWindow if Analyser is opened
+        """
         if event.type() == event.Close:
             # Enable main window when the new window is closed
             self.setEnabled(True)
@@ -39,11 +47,17 @@ class MainWindow(QMainWindow):
 
 
 class WebcamWidget(QWidget):
-    def __init__(self, open_analyzer):
-        super().__init__()
-        self.open_analyzer = open_analyzer
+    """Widget handling webcamera feed and displaying
 
-        self.analyzed_img = None
+    Args:
+        QWidget (_type_): _description_
+    """
+
+    def __init__(self, open_analyser_command):
+        super().__init__()
+        self.open_analyser = open_analyser_command
+
+        self.analysed_img = None
         self.uploaded_img = False
 
         self.video_capture = cv.VideoCapture(0)
@@ -53,30 +67,9 @@ class WebcamWidget(QWidget):
 
         self.init_ui()
 
-    def capture_frame(self):
-        self.uploaded_img = False
-        _, analyzed_img = self.video_capture.read()
-        analyzed_img = scale_image_to_min_height(analyzed_img)
-        self.analyzed_img = analyzed_img
-
-    def upload_file_dialog(self):
-        try:
-            fname = QFileDialog.getOpenFileName(
-                self, "Open File", "/")
-            path, extension = os.path.splitext(str(fname[0]))
-            im = cv.imread(fname[0])
-            im = scale_image_to_min_height(im)
-            self.analyzed_img = im
-
-        except Exception as e:
-            print(f"Something went wrong\n{e}")
-
-        finally:
-            # fname is a tuple where the first element is the file path
-            print(f"Selected file: {fname[0]}")
-            self.uploaded_img = True
-
     def init_ui(self):
+        """Creation of widget layout
+        """
         layout = QVBoxLayout()
 
         self.label_normal = QLabel(self)
@@ -96,8 +89,8 @@ class WebcamWidget(QWidget):
         button2 = QPushButton("Upload Image", self)
         button2.clicked.connect(self.upload_file_dialog)
         # BTN3
-        button3 = QPushButton("Analyze", self)
-        button3.clicked.connect(self.open_analyzer)
+        button3 = QPushButton("Analyse", self)
+        button3.clicked.connect(self.open_analyser)
 
         btn_layout = QVBoxLayout()
         sub_layout1 = QHBoxLayout()
@@ -119,6 +112,8 @@ class WebcamWidget(QWidget):
         self.setLayout(layout)
 
     def update_frame(self):
+        """Updating the displayed image from webcamera feed
+        """
         ret, frame = self.video_capture.read()
         frame = scale_image_to_min_height(frame)
 
@@ -129,20 +124,47 @@ class WebcamWidget(QWidget):
 
             capture_frame = cv.cvtColor(capture_frame, cv.COLOR_GRAY2RGB)
 
-            if self.analyzed_img is not None:
-                if self.analyzed_img.shape != frame.shape:
-                    resized_analyzed_img = cv.resize(
-                        self.analyzed_img, (frame.shape[1], frame.shape[0]), cv.INTER_AREA)
+            if self.analysed_img is not None:
+                if self.analysed_img.shape != frame.shape:
+                    resized_analysed_img = cv.resize(
+                        self.analysed_img, (frame.shape[1], frame.shape[0]), cv.INTER_AREA)
 
-                    capture_frame = resized_analyzed_img
+                    capture_frame = resized_analysed_img
                 else:
-                    capture_frame = self.analyzed_img
+                    capture_frame = self.analysed_img
 
             # Set the QPixmap to the QLabel widgets
             self.label_threshold.setPixmap(image2pixelmap(capture_frame))
 
             if self.uploaded_img:
                 pass
+
+    def capture_frame(self):
+        """Capturing of current frame and storing
+        """
+        self.uploaded_img = False
+        _, analysed_img = self.video_capture.read()
+        analysed_img = scale_image_to_min_height(analysed_img)
+        self.analysed_img = analysed_img
+
+    def upload_file_dialog(self):
+        """Open file upload dialog and displaying the selected image
+        """
+        try:
+            fname = QFileDialog.getOpenFileName(
+                self, "Open File", "/")
+            path, extension = os.path.splitext(str(fname[0]))
+            im = cv.imread(fname[0])
+            im = scale_image_to_min_height(im)
+            self.analysed_img = im
+
+        except Exception as e:
+            print(f"Something went wrong\n{e}")
+
+        finally:
+            # fname is a tuple where the first element is the file path
+            print(f"Selected file: {fname[0]}")
+            self.uploaded_img = True
 
 
 if __name__ == "__main__":

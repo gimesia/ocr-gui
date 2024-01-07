@@ -12,6 +12,9 @@ def norm2float(img): return (img/255.).astype(float)
 
 
 class BBox():
+    """Bounding box class to make it easier to handle than a list
+    """
+
     def __init__(self, tl, tr, bl, br):
         self.tl = tl
         self.tr = tr
@@ -25,15 +28,30 @@ class BBox():
         print(p, sep="\n")
 
     def points(self):
+        """Summarize points
+
+        Returns:
+            list: array of points 
+        """
         return [self.tl, self.tr, self.bl, self.br]
 
     def find_point_to_edit(self, point):
+        """Finds the closest corner to a given point
+
+        Args:
+            point (tuple(int, int)): input point
+        """
         dists = [dist(point, p) for p in self.points()]
         min_dist = np.array(dists).min()
         min_dist_index = dists.index(min_dist)
         self.edited_point_index = min_dist_index
 
     def change_point(self, point):
+        """Chanege the corner prevously selected
+
+        Args:
+            point (tuple(int, int)): new point location
+        """
         if self.edited_point_index == 0:
             self.tl = point
         elif self.edited_point_index == 1:
@@ -47,12 +65,25 @@ class BBox():
         # self.__str__()
 
     def shrink(self, shrink_pix=10):
+        """Decreases the bbox from all directions
+
+        Args:
+            shrink_pix (int, optional): shrink amount. Defaults to 10.
+        """
         self.tl = (self.tl[0]+shrink_pix, self.tl[1]+shrink_pix)
         self.tr = (self.tr[0]+shrink_pix, self.tr[1]-shrink_pix)
         self.bl = (self.bl[0]-shrink_pix, self.bl[1]+shrink_pix)
         self.br = (self.br[0]-shrink_pix, self.br[1]-shrink_pix)
 
     def create_mask(self, shape):
+        """Creates mask image from bbox
+
+        Args:
+            shape (tuple(int, int)): Shape of output image
+
+        Returns:
+            np.ndarray: image of mask 
+        """
         mask = np.zeros(shape, float)
         points = np.array(self.points())
 
@@ -68,6 +99,14 @@ class BBox():
         return mask
 
     def get_rotation_angle(self, shape):
+        """Gets the orientation of the bbox
+
+        Args:
+            shape (tuple(int, int)): shape of the image to get the orientation from
+
+        Returns:
+            float: orientation angle
+        """
         mask = self.create_mask(shape)
         mask = norm2int(mask)
         mask = rgb2gray(mask)
@@ -82,6 +121,15 @@ class BBox():
 
 
 def cut_straight_bbox_img(img: np.ndarray, bbox: BBox):
+    """Cuts image in the area of the bbox and rotates it straight
+
+    Args:
+        img (np.ndarray): image to cut
+        bbox (BBox): bbox to cut out from image
+
+    Returns:
+        np.ndarray: staight cut image
+    """
     mask = bbox.create_mask(img.shape)
     angle = bbox.get_rotation_angle(img.shape)
 
@@ -99,6 +147,8 @@ def cut_straight_bbox_img(img: np.ndarray, bbox: BBox):
 
 
 def image2pixelmap(img: np.ndarray, shape=None):
+    """Converts image from opencv form to pyqt form
+    """
     if shape is None:
         height, width, channel = img.shape
     else:
@@ -113,67 +163,15 @@ def image2pixelmap(img: np.ndarray, shape=None):
     return QPixmap.fromImage(image)
 
 
-def mask_white_objects(img):
-    # Convert the image to grayscale
-    gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-
-    # Threshold the grayscale image to create a binary mask for white objects
-    _, thresholded = cv.threshold(gray, 200, 255, cv.THRESH_BINARY)
-
-    # Find contours in the binary mask
-    contours, _ = cv.findContours(
-        thresholded, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-
-    # Create an empty mask
-    mask = np.zeros_like(img)
-
-    for contour in contours:
-        x, y, w, h = cv.boundingRect(contour)
-        cv.rectangle(mask, (x, y), (x+w, y+h),
-                     (255, 255, 255), thickness=cv.FILLED)
-
-    # Bitwise AND the original image with the mask to mask out white objects
-    masked_image = cv.bitwise_and(img, mask)
-
-    return masked_image
-
-
-def bbox_of_largest_white_object(img):
-    gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-
-    _, thresholded = cv.threshold(gray, 200, 255, cv.THRESH_BINARY)
-
-    contours, _ = cv.findContours(
-        thresholded, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-
-    largest = None
-
-    for contour in contours:
-        if largest is None:
-            largest = contour
-        else:
-            if cv.contourArea(largest) > cv.contourArea(contour):
-                largest = contour
-
-    rect = cv.minAreaRect(largest)
-    return cv.boxPoints(rect)
-
-
 def dist(point_a, point_b):
+    """Eucledian distance of 2 points
+    """
     return np.linalg.norm(np.array(point_a)-np.array(point_b))
 
 
-def convert_qt_to_cv(qt_pixmap):
-    qt_image = qt_pixmap.toImage()
-    width = qt_image.width()
-    height = qt_image.height()
-    buffer = qt_image.constBits()
-    buffer.setsize(height * width * 4)
-    cv_image = np.array(buffer).reshape((height, width, 4))
-    return cv.cvtColor(cv_image, cv.COLOR_RGBA2RGB)
-
-
 def rotate_img(img, angle):
+    """Rotates the image with a rotation angle
+    """
     height, width = img.shape[:2]
     rotation_matrix = cv.getRotationMatrix2D((width / 2, height / 2), angle, 1)
 
@@ -193,6 +191,8 @@ def rotate_img(img, angle):
 
 
 def scale_image_to_min_height(image, min_height=920):
+    """If image doesn't have a min height, this scales it up while keeping the aspect ratio
+    """
     # Get image dimensions
     height, width = image.shape[:2]
 
@@ -213,6 +213,8 @@ def scale_image_to_min_height(image, min_height=920):
 
 
 def find_available_filename(file_path):
+    """Searches for a filename and returns the first available duplicate option
+    """
     if not os.path.exists(file_path):
         return file_path  # If the file doesn't exist, return the original filename
 
@@ -223,15 +225,3 @@ def find_available_filename(file_path):
         counter += 1
 
     return f"{base_name}_{counter}{extension}"
-
-
-def sharpen_image(image):
-    # Define the sharpening kernel
-    kernel = np.array([[0, -1, 0],
-                       [-1, 4, -1],
-                       [0, -1, 0]])
-
-    # Apply the kernel to the image using filter2D function
-    sharpened = cv.filter2D(image, -1, kernel)
-
-    return sharpened
