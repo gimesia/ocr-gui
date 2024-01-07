@@ -1,26 +1,24 @@
-# Python Project for MAIA 1 semester Software Engineering class
-## Topic: Text recognition with GUI
-A program to help me get familiar and showcase the tools provided by `PyTesseract` and `PyQt`, 2 popular packages which I have never used before.
+# 🐍💻 Python Project for MAIA 8, semester 1 Software Engineering class 
+## 🔍👀 Text recognition with GUI 
+### __A GUI tool to extract texts from images either taken from the user's webcamera or an uploaded from the file directory.__ 
+The development of this program helped me to get familiar and showcase the tools provided by `PyTesseract` and `PyQt5`, 2 popular packages which I have never used before. 
 
-
-## Usage:
-The program is a GUI tool to extract texts from images either taken from the User's webcamera or an uploaded from the file directory.
-
-It can be useful for:
+### The tool can be useful for:
 - digitalizing the information on grocery receipts
 - to digitalize the text on sheets of papers from other classes, where the digital document was not provided (e.g. Applied Mathematics course papers)
 - extracting the text from screenshots
-- etc.
+- etc...
 
-### Dependencies:
+## Usage:
+### 📦 Dependencies:
 - numpy
 - opencv
 - pytesseract
-- pyqt
+- pyqt5
 
-### User Guide:
+### 📝Manual:
 
-0. (Make sure all the dependencies are met)
+0. (Make sure all the dependencies are met, change variables in the `config.py` file for the path if needed)
 
 1. run `main.py` -> The main GUI window opens (this can take a couple of seconds, as OpenCV has to access the computer's webcamera)
 
@@ -36,7 +34,7 @@ _(Note: if the webcamera does not have a good enough resolution the OCR might no
 6. The image with the indicated recognized texts will apper on the left, while on the right the text is extracted into an editable textbox. If the text recognition has made some mistakes, correct them in the textbox, and save the results by pressing the "__Save__" button. The analyzer window closes when the text is saved, and the process returns to __Step 2.__
 
 
-## Directory structure:
+### 📁 Directory structure:
 ```
 ├── test_images
 |   └─ images for demonstation purposes
@@ -52,3 +50,7 @@ _(Note: if the webcamera does not have a good enough resolution the OCR might no
 ├── utils.py
 ├── config.py
 ```
+
+### 💡 Notes:
+- PyTesseract works best if the text is vertical and text color is black and the background is white
+- PyTesseract engine needs to be downloaded, windows installer available at [UB Mannheim's github](https://github.com/UB-Mannheim/tesseract/wiki)

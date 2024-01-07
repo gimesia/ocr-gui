@@ -27,10 +27,11 @@ class MainWindow(QMainWindow):
         """Creates analyser window from captured or uploaded image
         """
         if self.webcam_widget.analysed_img is not None:
-            self.new_window = AnalyserWindow(self.webcam_widget.analysed_img)
-            self.new_window.show()
+            self.new_window = AnalyserWindow(
+                self.webcam_widget.analysed_img)  # Open analyzer window
 
             self.setEnabled(False)  # Disable main window
+
             # Re-enable main window when closed
             self.new_window.installEventFilter(self)
         else:
@@ -72,16 +73,15 @@ class WebcamWidget(QWidget):
         """
         layout = QVBoxLayout()
 
-        self.label_normal = QLabel(self)
-        self.label_normal.setAlignment(Qt.AlignCenter)
+        # Label for camera feed
+        self.label_camera_feed = QLabel(self)
+        self.label_camera_feed.setAlignment(Qt.AlignCenter)
 
-        self.label_threshold = QLabel(self)
-        self.label_threshold.setAlignment(Qt.AlignCenter)
+        # Label for captured or uploaded image
+        self.label_analysed_img = QLabel(self)
+        self.label_analysed_img.setAlignment(Qt.AlignCenter)
 
-        self.label_masked = QLabel(self)
-        self.label_masked.setAlignment(Qt.AlignCenter)
-
-        # Add buttons to the second column
+        # Buttons
         # BTN1
         button1 = QPushButton("Capture Frame", self)
         button1.clicked.connect(self.capture_frame)
@@ -101,8 +101,8 @@ class WebcamWidget(QWidget):
         sub_layout2.addWidget(button3)
 
         frames_layout = QHBoxLayout()
-        frames_layout.addWidget(self.label_normal)
-        frames_layout.addWidget(self.label_threshold)
+        frames_layout.addWidget(self.label_camera_feed)
+        frames_layout.addWidget(self.label_analysed_img)
 
         btn_layout.addLayout(sub_layout1)
         btn_layout.addLayout(sub_layout2)
@@ -118,26 +118,26 @@ class WebcamWidget(QWidget):
         frame = scale_image_to_min_height(frame)
 
         if ret:
-            self.label_normal.setPixmap(image2pixelmap(frame))
-
-            capture_frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
-
-            capture_frame = cv.cvtColor(capture_frame, cv.COLOR_GRAY2RGB)
+            # Set left image
+            self.label_camera_feed.setPixmap(image2pixelmap(frame))
+            capture_frame = frame.copy()
 
             if self.analysed_img is not None:
                 if self.analysed_img.shape != frame.shape:
+                    # Making sure that both images have the same dimensions
                     resized_analysed_img = cv.resize(
                         self.analysed_img, (frame.shape[1], frame.shape[0]), cv.INTER_AREA)
 
                     capture_frame = resized_analysed_img
                 else:
                     capture_frame = self.analysed_img
+            else:
+                # Turnig the right image gray to indicate that capturing is needed
+                capture_frame = cv.cvtColor(capture_frame, cv.COLOR_BGR2GRAY)
+                capture_frame = cv.cvtColor(capture_frame, cv.COLOR_GRAY2RGB)
 
-            # Set the QPixmap to the QLabel widgets
-            self.label_threshold.setPixmap(image2pixelmap(capture_frame))
-
-            if self.uploaded_img:
-                pass
+            # Set right image
+            self.label_analysed_img.setPixmap(image2pixelmap(capture_frame))
 
     def capture_frame(self):
         """Capturing of current frame and storing
@@ -162,7 +162,6 @@ class WebcamWidget(QWidget):
             print(f"Something went wrong\n{e}")
 
         finally:
-            # fname is a tuple where the first element is the file path
             print(f"Selected file: {fname[0]}")
             self.uploaded_img = True
 
