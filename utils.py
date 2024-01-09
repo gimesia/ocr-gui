@@ -41,7 +41,9 @@ class BBox():
         Args:
             point (tuple(int, int)): input point
         """
+        # collect distances for corners
         dists = [dist(point, p) for p in self.points()]
+        # select the closest and stored it in obj. var.
         min_dist = np.array(dists).min()
         min_dist_index = dists.index(min_dist)
         self.edited_point_index = min_dist_index
@@ -87,14 +89,14 @@ class BBox():
         mask = np.zeros(shape, float)
         points = np.array(self.points())
 
+        # sort points in clockwise order
         centroid = np.mean(points, axis=0)
-
         angles = np.arctan2(points[:, 1] - centroid[1],
                             points[:, 0] - centroid[0])
-
         sorted_indices = np.argsort(angles)
         sorted_points = points[sorted_indices]
 
+        # draw filled white polygon
         cv.drawContours(mask, [sorted_points], -1, (1, 1, 1), -1)
         return mask
 
@@ -115,7 +117,9 @@ class BBox():
             mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
         cnt = cnts[0]
 
+        # get minimum area bounding rectangle
         rect = cv.minAreaRect(cnt)
+        # extracting the rotation angle out
         angle = rect[2]
         return angle
 
@@ -133,14 +137,17 @@ def cut_straight_bbox_img(img: np.ndarray, bbox: BBox):
     mask = bbox.create_mask(img.shape)
     angle = bbox.get_rotation_angle(img.shape)
 
+    # staightening image and mask
     rotated_mask = rotate_img(mask, -(90-angle))
     rotated_img = rotate_img(img, -(90-angle))
+    # masking
     rotated_masked_img = rotated_mask.astype(bool)*rotated_img
 
+    # get mask object
     cnts, _ = cv.findContours(
         rgb2gray(norm2int(rotated_mask)), cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
     cnt = cnts[0]
-
+    # get coordinates of mask object
     x, y, w, h = cv.boundingRect(cnt)
 
     return rotated_masked_img[y:y+h, x:x+w]
@@ -155,7 +162,6 @@ def image2pixelmap(img: np.ndarray, shape=None):
         height, width = shape
 
     bytes_per_line = 3 * width
-
     image = QImage(img, width, height,
                    bytes_per_line, QImage.Format_RGB888)
     image = image.rgbSwapped()  # Fix color channels

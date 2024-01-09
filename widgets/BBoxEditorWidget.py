@@ -20,6 +20,7 @@ class BBoxEditorWidget(QWidget):
 
         self.resize(w, h)
 
+        # create scene for handling click events
         self.scene = QGraphicsScene()
         self.scene.setSceneRect(0, 0, w, h)
 
@@ -28,6 +29,7 @@ class BBoxEditorWidget(QWidget):
 
         self.view.mousePressEvent = self.mouse_click_event
 
+        # adding bbox to image
         self.bbox = BBox(
             (0, 0), (0, h), (w, 0), (w, h))
 
@@ -63,6 +65,7 @@ class BBoxEditorWidget(QWidget):
         """
         img = self.img.copy()
 
+        # masking the image with the bbox's area
         if mask is not None:
             alpha = 0.5
             beta = (1.0 - alpha)
@@ -70,6 +73,8 @@ class BBoxEditorWidget(QWidget):
             img = cv.addWeighted(
                 img, alpha, mask.astype(np.uint8)*255, beta, 0.0)
 
+        
+        # drawing circles at bbox corners
         for i, point in enumerate(self.bbox.points()):
             rad = 4
             thickness = -1

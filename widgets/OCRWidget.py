@@ -47,20 +47,24 @@ class OCRWidget(QWidget):
         """Charachter recognition and displaying of results
         """
         img = self.img.copy()
-
+        
+        # extract text
         extracted_text = pytesseract.image_to_string(
-            img, config=tesseract_config)
+            img, config=tesseract_config) 
         self.lines = extracted_text.split("\n")
 
+        # extract text data
         data = pytesseract.image_to_data(
             img, output_type=pytesseract.Output.DICT, config=tesseract_config)
 
+        # draw text bboxes
         for i in range(len(data["text"])):
             x, y, w, h = data["left"][i], data["top"][i], data["width"][i], data["height"][i]
             # Filter out low-confidence and empty detections
             if int(data["conf"][i]) >= 0 and data["text"][i].replace(" ", "") != "":
                 cv.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 1)
 
+        # show results 
         self.text_edit.setPlainText(extracted_text)
         self.image_label.setPixmap(image2pixelmap(img))
 

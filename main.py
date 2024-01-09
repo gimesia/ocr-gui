@@ -118,7 +118,7 @@ class WebcamWidget(QWidget):
         frame = scale_image_to_min_height(frame)
 
         if ret:
-            # Set left image
+            # set left-side image
             self.label_camera_feed.setPixmap(image2pixelmap(frame))
             capture_frame = frame.copy()
 
@@ -136,7 +136,7 @@ class WebcamWidget(QWidget):
                 capture_frame = cv.cvtColor(capture_frame, cv.COLOR_BGR2GRAY)
                 capture_frame = cv.cvtColor(capture_frame, cv.COLOR_GRAY2RGB)
 
-            # Set right image
+            # set right-side image
             self.label_analysed_img.setPixmap(image2pixelmap(capture_frame))
 
     def capture_frame(self):

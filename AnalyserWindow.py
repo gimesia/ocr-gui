@@ -1,9 +1,8 @@
 import sys
 
-import numpy as np
 import cv2 as cv
 
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QMainWindow, QTextEdit
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QMainWindow, QTextEdit
 from widgets.BBoxEditorWidget import *
 from widgets.CutImagePreviewWidget import *
 from widgets.OCRWidget import *
@@ -22,8 +21,8 @@ class AnalyserWindow(QMainWindow):
 
         self.img = img
         self.cut_img = None
+        
         self.cip_widget = None
-
         self.bbox_editor = BBoxEditorWidget(self.img)
 
         self.control_button = QPushButton("Cut", self)
@@ -35,6 +34,7 @@ class AnalyserWindow(QMainWindow):
         self.layout.addWidget(self.bbox_editor)
         self.layout.addWidget(self.control_button)
 
+        # Show bboxeditor on window
         self.central_widget.setLayout(self.layout)
         self.setCentralWidget(self.central_widget)
 
@@ -53,6 +53,7 @@ class AnalyserWindow(QMainWindow):
         widget = QWidget()
         cip_widget = CutImagePreviewWidget(self.cut_img)
         self.cip_widget = cip_widget
+
         btn = QPushButton("OCR!", self)
         btn.clicked.connect(self.perform_ocr)
 
@@ -62,6 +63,7 @@ class AnalyserWindow(QMainWindow):
 
         widget.setLayout(layout)
 
+        # Show cut-image-preview on window
         self.central_widget = widget
         self.setCentralWidget(self.central_widget)
 
@@ -70,6 +72,8 @@ class AnalyserWindow(QMainWindow):
             return
 
         ocr_widget = OCRWidget(self.cip_widget.img, self.close_window)
+ 
+        # Show ocr-handler on window
         self.central_widget = ocr_widget
         self.setCentralWidget(self.central_widget)
 
